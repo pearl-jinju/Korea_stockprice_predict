@@ -4,19 +4,12 @@ import numpy as np
 from pykrx import stock
 from pykrx import bond
 from datetime import datetime
-from loder import date_from_now, get_stock_basic_info
+from loader import date_from_now, get_stock_basic_info
 from tqdm import tqdm
+import params
 
 
-
-analysis_day=20
-period_yeild_day=20
-year_to_day = 252
-moving_average_day=252
-# 신규상장 감안 분석제거 년수
-new_listing_reduction_year = 1
-
-def patten_to_vector(analysis_day:int=20, period_yeild_day:int=20, year_to_day:int=252,moving_average_day:int=252,new_listing_reduction_year:int=1):
+def patten_to_vector(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day:int=params.PERIOD_YEILD_DAY, year_to_day:int=params.YEAR_TO_DAY,moving_average_day:int=params.MOVING_AVERAGE_DAY,new_listing_reduction_year:int=params.NEW_LISTING_REDUCTION_YEAR):
     # 데이터 로드
     data_path =  "../data/stock_price_data_all_period_20221209.pickle"
 
@@ -51,7 +44,7 @@ def patten_to_vector(analysis_day:int=20, period_yeild_day:int=20, year_to_day:i
             row = row.dropna(axis=0)
             # 1년 단위로 반복!
             temp_df = pd.DataFrame()
-            for year in range(business_year-3,business_year-1):
+            for year in range(business_year-1):
                 # 1일 단위로 반복! 1년 기준일 -(분석범위 + 예측할 수익률기간)
                 for day in range(1,year_to_day-(analysis_day+period_yeild_day)+1):    
                     row_per_year = row.iloc[(year*year_to_day+day):(year*year_to_day+day)+(analysis_day+period_yeild_day),:]
@@ -83,6 +76,6 @@ def patten_to_vector(analysis_day:int=20, period_yeild_day:int=20, year_to_day:i
         pickle.dump(result_df, f)
     print("vectorizing_COMPLETE")
     
-patten_to_vector(20,5,252,224)
+patten_to_vector(20,20,params.YEAR_TO_DAY,224,1)
 
 # 허스트 지수 산출
