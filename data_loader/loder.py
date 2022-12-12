@@ -38,15 +38,19 @@ df_stock_basic_info = get_stock_basic_info()
 
 
 #종목명을 받으면 기간동안의 주가/거래량/수급/기본Fundamental 지표 변동을 출력해주는 함수(day default 종목 전체기간 데이터 호출)
-def get_stock_price_info(ticker:str, day:int=50000, market:str="ALL"):
+# info="ALL" 거래량과 펀더멘탈 정보 포함
+# info="BASIC" 기본 정보만 포함
+def get_stock_price_info(ticker:str, market:str="ALL", info="ALL", day:int=50000):
     df_stock_ohlcv = stock.get_market_ohlcv(date_from_now(day), date_from_now(), ticker)
     cond = df_stock_basic_info['티커']==ticker
     stock_name = df_stock_basic_info[cond]['종목명'].values[0]
-    print(stock_name)
-    df_stock_volume_detail = stock.get_market_trading_value_by_date(date_from_now(day), date_from_now(), ticker)
-    df_result = pd.merge(df_stock_ohlcv, df_stock_volume_detail, left_index=True, right_index=True, how='left')
-    df_stock_fundamental = stock.get_market_fundamental(date_from_now(day), date_from_now(), ticker)
-    df_result = pd.merge(df_result, df_stock_fundamental, left_index=True, right_index=True, how='left').reset_index()
+    if info=="ALL":
+        df_stock_volume_detail = stock.get_market_trading_value_by_date(date_from_now(day), date_from_now(), ticker)
+        df_result = pd.merge(df_stock_ohlcv, df_stock_volume_detail, left_index=True, right_index=True, how='left')
+        df_stock_fundamental = stock.get_market_fundamental(date_from_now(day), date_from_now(), ticker)
+        df_result = pd.merge(df_result, df_stock_fundamental, left_index=True, right_index=True, how='left').reset_index()
+    elif info=="BASIC":
+        df_result = df_stock_ohlcv
     df_result['종목명'] = stock_name
     return df_result
 
