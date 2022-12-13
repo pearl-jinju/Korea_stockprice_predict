@@ -6,8 +6,8 @@
    > * 현재 시점(t)을 기준으로 과거 X일 전까지의 주가 패턴을 LightGBM을 train_data로, 현재 시점(t)으로부터 y일 후 보유수익률을 test로 사용하였습니다. 
    
 ## Dataset의 정의
-![image](https://user-images.githubusercontent.com/97038372/207221374-9fcf8db8-db34-4c62-8580-ee913b51de65.png)
-![image](https://user-images.githubusercontent.com/97038372/207221527-02d1867c-8c1b-4621-8f5b-6e040ffe22a0.png)
+![image](https://user-images.githubusercontent.com/97038372/207221677-b3a95f85-3d4f-4aee-8e8e-f78ee41888f6.png)
+![image](https://user-images.githubusercontent.com/97038372/207221712-ffb92880-44d5-40ed-b6bd-7289fc39546c.png)
 
 
 ## Usage
