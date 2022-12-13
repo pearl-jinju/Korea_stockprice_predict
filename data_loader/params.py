@@ -1,7 +1,7 @@
 # 벡터화할 기간(분석기간)
 ANALYSIS_DAY =20
 # 수익률 산정기간(test값 산출 기간)
-PERIOD_YEILD_DAY=20
+PERIOD_YEILD_DAY=5
 # 1년으로 볼 영업일 수 
 YEAR_TO_DAY = 252
 # 이동평균일수

@@ -1,11 +1,14 @@
 from pykrx import stock
 from pykrx import bond
-from loder import date_from_now, get_stock_basic_info, get_stock_price_info
+from loader import date_from_now, get_stock_basic_info, get_stock_price_info
 from tqdm import tqdm
 import params
 import pandas as pd
 import numpy as np
 import model
+
+# df = bond.get_otc_treasury_yields(date_from_now(), date_from_now(), "국고채2년")
+# print(df.head())
 
 
 # 종목명을 넣으면 vector로 변환하여 day동안의 모델을 적용한 수익률과 실제수익률을 비교하는 함수를 출력
@@ -109,7 +112,5 @@ def get_backtest_yeild_with_name(name, market ="ALL"  ,day=params.YEAR_TO_DAY*3)
     return [backtest_yeild, yeild_prediction, recommend_position, invest_efficiency]
 
 # invest_efficiency 가 1이면서, recommend_position이 '매수'인것만 추천해줄것!
-
-
-print(get_backtest_yeild_with_name("특수건설"))
+print(get_backtest_yeild_with_name("푸른저축은행"))
 
