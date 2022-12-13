@@ -1,25 +1,29 @@
 from pykrx import stock
 from pykrx import bond
 from loader import date_from_now, get_stock_basic_info, get_stock_price_info
+import joblib
 from tqdm import tqdm
 import params
 import pandas as pd
 import numpy as np
-import model
 
 # df = bond.get_otc_treasury_yields(date_from_now(), date_from_now(), "국고채2년")
 # print(df.head())
 
 
 # 종목명을 넣으면 vector로 변환하여 day동안의 모델을 적용한 수익률과 실제수익률을 비교하는 함수를 출력
-def get_backtest_yeild_with_name(name, market ="ALL"  ,day=params.YEAR_TO_DAY*3):
+def get_backtest_yeild_with_name(name, year=3, market ="ALL"):
+    day =  params.YEAR_TO_DAY * year
     print("get_stock_basic_info....")
+    print(print)
     all_stock_df = get_stock_basic_info()
     cond = all_stock_df['종목명'] == name
     ticker = all_stock_df.loc[cond,'티커'].values[0]
+    
     print("get_stock_price_info....")
     result_df = get_stock_price_info(ticker,market,"BASIC", day)
     result_df = result_df['종가']
+    
     print("initializing simulation....")
     # 현재 종목보유상태 초기화
     trading_position = "N"
@@ -42,7 +46,9 @@ def get_backtest_yeild_with_name(name, market ="ALL"  ,day=params.YEAR_TO_DAY*3)
         vector_df_nomalized = vector_df_nomalized.values
         vector_df_nomalized = np.append(vector_df_nomalized, period_yeild)
         vector_df_nomalized = pd.DataFrame([vector_df_nomalized])  
-        yeild_prediction = model.final_lgb_model.predict(vector_df_nomalized.iloc[:,:20])[0] 
+        
+        final_lgb_model = joblib.load("../data/lgbm_model.pkl") 
+        yeild_prediction = final_lgb_model.predict(vector_df_nomalized.iloc[:,:20])[0] 
         
         # 매매 트레이딩 시뮬레이션
         # 현재 주식이 없다면
@@ -87,7 +93,7 @@ def get_backtest_yeild_with_name(name, market ="ALL"  ,day=params.YEAR_TO_DAY*3)
 
     print("=============================================")
     print(f"{name}_Back_test 연환산수익률 {backtest_yeild:.2f}%")
-    print(f"당일기준 {params.ANALYSIS_DAY}일 후 예상 보유수익률 {yeild_prediction:.2f}%")
+    print(f"당일기준 {params.PERIOD_YEILD_DAY}일 후 예상 보유수익률 {yeild_prediction:.2f}%")
     
     # 추천 매매포지션
     recommend_position = ""
@@ -111,6 +117,7 @@ def get_backtest_yeild_with_name(name, market ="ALL"  ,day=params.YEAR_TO_DAY*3)
     print("=============================================")
     return [backtest_yeild, yeild_prediction, recommend_position, invest_efficiency]
 
+
 # invest_efficiency 가 1이면서, recommend_position이 '매수'인것만 추천해줄것!
-print(get_backtest_yeild_with_name("푸른저축은행"))
+# print(get_backtest_yeild_with_name("삼성전자"))
 

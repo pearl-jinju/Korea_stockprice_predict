@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+import joblib
 from lightgbm import LGBMRegressor, plot_importance
 import optuna
 from optuna import Trial, visualization
@@ -60,6 +61,14 @@ pred_vaild = final_lgb_model.predict(X_vaild)
 vaild_mae = mean_absolute_error(Y_vaild,pred_vaild)
 pred_test = final_lgb_model.predict(X_test)
 test_mae = mean_absolute_error(Y_test,pred_test)
+
+
+print(vaild_mae, test_mae)
+# 모델 저장
+joblib.dump(final_lgb_model, "../data/lgbm_model.pkl") 
+
+
+# plot_importance 시각화
 # fm.get_fontconfig_fonts()
 # FONT_LOCATION = r'C:\Windows\Fonts/malgun.ttf'
 # font_name = fm.FontProperties(fname=FONT_LOCATION).get_name()
