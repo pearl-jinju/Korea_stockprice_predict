@@ -67,7 +67,9 @@ def patten_to_vector(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day:int=
 
 
             result_df = pd.concat([result_df,temp_df])
+            
         except:
+            print("오류")
             continue
 
     print(result_df)
@@ -76,6 +78,6 @@ def patten_to_vector(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day:int=
         pickle.dump(result_df, f)
     print("vectorizing_COMPLETE")
     
-patten_to_vector(20,20,params.YEAR_TO_DAY,224,1)
+patten_to_vector()
 
 # 허스트 지수 산출
