@@ -23,6 +23,7 @@ def patten_to_vector(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day:int=
     result_df = pd.DataFrame()
     # 모든 종목 조회!
     for idx in tqdm(range(len(df_price_period))):
+    # for idx in tqdm(range(1)):
         try:
             # 종목 추출
             nan_row = df_price_period.iloc[:, idx:idx+1]
@@ -60,7 +61,8 @@ def patten_to_vector(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day:int=
                     moving_average_value_list = moving_average_range.values
                     price_vector = list(price_value_list) + list(moving_average_value_list)
                     # Nomalize
-                    price_vector = price_vector/analysis_range.mean()
+                    price_vector = price_vector/buy_price
+                    price_vector = np.round(price_vector,2)
                     result_vector = np.append(price_vector, period_yeild)
                     vector_df = pd.DataFrame([result_vector])        
                     temp_df = pd.concat([temp_df, vector_df])
@@ -68,13 +70,13 @@ def patten_to_vector(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day:int=
 
             result_df = pd.concat([result_df,temp_df])
             
-        except:
+        except KeyboardInterrupt:
             print("오류")
             continue
 
     print(result_df)
     # save
-    with open(f'../data/Korea_stock_Dataset_{analysis_day}_{period_yeild_day}_{year_to_day}_{moving_average_day}_{new_listing_reduction_year}.pickle', 'wb') as f:
+    with open(f'../data/Korea_stock_Dataset_{analysis_day}_{period_yeild_day}_{year_to_day}_{moving_average_day}_{new_listing_reduction_year}_divide_buyprice.pkl', 'wb') as f:
         pickle.dump(result_df, f)
     print("vectorizing_COMPLETE")
     
