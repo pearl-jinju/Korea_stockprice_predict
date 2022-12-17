@@ -10,8 +10,10 @@
 ![image](https://user-images.githubusercontent.com/97038372/207221712-ffb92880-44d5-40ed-b6bd-7289fc39546c.png)
 
 ## 발견한 점
+
+![image](https://user-images.githubusercontent.com/97038372/208244219-47fe7971-b2a9-4ee6-84a7-19e0f4c5d2ca.png)
+
 > 20221217
-> ![image](https://user-images.githubusercontent.com/97038372/208244219-47fe7971-b2a9-4ee6-84a7-19e0f4c5d2ca.png)
 > 50일의 이전 주가를 x값으로 5일 이후의 수익률을 y값으로 두었을 때, 수익률의 분포이다.
 > 놀랍게도 이론에서 가정하는 것처럼 정규분포의 형태를 보였다.
 
