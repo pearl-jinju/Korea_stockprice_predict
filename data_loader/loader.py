@@ -29,7 +29,6 @@ def get_stock_basic_info(day:int=0, market:str="ALL"):
     df_stake_info = stock.get_exhaustion_rates_of_foreign_investment(date_from_now(), market).reset_index()
     df_change = stock.get_market_price_change(date_from_now(day),date_from_now(), market=market).reset_index()
     df_result = pd.merge(df_change,df_stake_info, on='티커',how='left')
-    
     df_fundamental = stock.get_market_fundamental( date_from_now(), market=market).reset_index()
     df_result = pd.merge(df_result,df_fundamental, on='티커',how='left')
     return df_result
@@ -61,22 +60,22 @@ if __name__=='__main__':
         result_df = pd.DataFrame()
         # 티커 호출
         tickers = stock.get_market_ticker_list(date_from_now(), market=market)
-        for ticker in tqdm(tickers[:1]):  # tickers[1270] 오류 있음  
+        for ticker in tqdm(tickers[2:3]):  # tickers[1270] 오류 있음  
                 temp_df = get_stock_price_info(ticker)
                 result_df = pd.concat([result_df,temp_df])
         result_df.columns = temp_df.columns
         result_df['market'] = market
         
-        with open(f'../data/stock_price_data_all_period_{market}.pickle', 'wb') as f:
+        with open(f'../data/stock_price_data_all_period_{market}.pkl', 'wb') as f:
             pickle.dump(result_df, f)
 
     # 임시저장 파일 load
-    with open('../data/stock_price_data_all_period_KOSPI.pickle', 'rb') as f:
+    with open('../data/stock_price_data_all_period_KOSPI_2.pkl', 'rb') as f:
         kospi_df = pickle.load(f)
-    with open('../data/stock_price_data_all_period_KOSDAQ.pickle', 'rb') as f:
+    with open('../data/stock_price_data_all_period_KOSDAQ_2.pkl', 'rb') as f:
         kosdaq_df = pickle.load(f)
         
     all_market_df = pd.concat([kospi_df,kosdaq_df])
     # 최종 파일 생성
-    with open(f'../data/stock_price_data_all_period_ALL.pickle', 'wb') as f:
+    with open(f'../data/stock_price_data_all_period_ALL_2.pkl', 'wb') as f:
         pickle.dump(all_market_df, f)

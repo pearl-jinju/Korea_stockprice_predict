@@ -6,23 +6,36 @@ from tqdm import tqdm
 import params
 import pandas as pd
 import numpy as np
+import torch
+
 
 # df = bond.get_otc_treasury_yields(date_from_now(), date_from_now(), "국고채2년")
 # print(df.head())
+def get_info():
+    all_stock_df = get_stock_basic_info()
+    # 등락률 상위종목
+    top10 = all_stock_df.sort_values(by='등락률',ascending=False)[['종목명','종가','등락률']].iloc[:10,:]
+    bottom10 = all_stock_df.sort_values(by='등락률',ascending=True)[['종목명','종가','등락률']].iloc[:10,:]
+    return [top10, bottom10]
 
 
 # 종목명을 넣으면 vector로 변환하여 day동안의 모델을 적용한 수익률과 실제수익률을 비교하는 함수를 출력
 def get_backtest_yeild_with_name(name, year=3, market ="ALL"):
     day =  params.YEAR_TO_DAY * year
     print("get_stock_basic_info....")
-    print(print)
     all_stock_df = get_stock_basic_info()
+            
     cond = all_stock_df['종목명'] == name
     ticker = all_stock_df.loc[cond,'티커'].values[0]
     
     print("get_stock_price_info....")
-    result_df = get_stock_price_info(ticker,market,"BASIC", day)
-    result_df = result_df['종가']
+    result_df = get_stock_price_info(ticker,market,"ALL", day)
+    stock_price_info = result_df.iloc[-1:,1:5]
+    stock_fundamental_info = result_df.iloc[-1:,-6:-2]
+    stock_fundamental_info.round(2)
+    del stock_fundamental_info['EPS']
+
+    result_df = result_df['등락률']
     
     print("initializing simulation....")
     # 현재 종목보유상태 초기화
@@ -35,42 +48,45 @@ def get_backtest_yeild_with_name(name, year=3, market ="ALL"):
     # 현재 수익률 초기화
     current_yeild = 0
     print("Back_test....")
+    
+    
+    final_lgb_model = joblib.load("../model/lgbm_model_2.90_2.90_iter_23744_rate.pkl") 
+
     for idx in tqdm(range(len(result_df)-(params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY)+1)):
         row_vector = result_df.iloc[idx:idx+params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY]
         vector_df = row_vector.iloc[:params.ANALYSIS_DAY]
-        vector_df_nomalized = vector_df/(vector_df).mean()
         buy_price = row_vector.values[params.ANALYSIS_DAY]
         sell_price = row_vector.values[-1]  
         period_yeild = round(((sell_price-buy_price)/buy_price)*100,2)
         # list로(vector) 변환: features + target  
-        vector_df_nomalized = vector_df_nomalized.values
-        vector_df_nomalized = np.append(vector_df_nomalized, period_yeild)
-        vector_df_nomalized = pd.DataFrame([vector_df_nomalized])  
-        
-        final_lgb_model = joblib.load("../data/lgbm_model.pkl") 
-        yeild_prediction = final_lgb_model.predict(vector_df_nomalized.iloc[:,:20])[0] 
-        
+        vector_df = vector_df.values
+        vector_df = np.append(vector_df, period_yeild)
+        vector_df = pd.DataFrame([vector_df])  
+
+        yeild_prediction = final_lgb_model.predict(vector_df.iloc[:,:params.ANALYSIS_DAY])[0] 
+
+
         # 매매 트레이딩 시뮬레이션
         # 현재 주식이 없다면
         if trading_position=="N":
             # 만약 매수 허들을 넘었다면 매수,
-            if yeild_prediction > params.TRADING_HURDLE[0]:
+            if yeild_prediction >= params.TRADING_HURDLE[0]:
                 # 보유 상태로 변경
                 trading_position = "Y"
                 trading_amount = trading_price / buy_price
                 trading_price = 0
             # 만약 매도 허들 이하라면 무시,
-            elif yeild_prediction < params.TRADING_HURDLE[1]:
+            elif yeild_prediction <= params.TRADING_HURDLE[1]:
                 continue
             # 만약 중립구간이라면 무시
             else:
                 continue
         elif trading_position=="Y":
             # 만약 매수 허들을 넘었다면 무시,
-            if yeild_prediction > params.TRADING_HURDLE[0]:
+            if yeild_prediction >= params.TRADING_HURDLE[0]:
                 continue
             # 만약 매도 허들 이하라면 매도,
-            elif yeild_prediction < params.TRADING_HURDLE[1]:
+            elif yeild_prediction <= params.TRADING_HURDLE[1]:
                 trading_position = "N"
                 trading_price = trading_amount*buy_price
                 trading_amount = 0
@@ -89,7 +105,7 @@ def get_backtest_yeild_with_name(name, year=3, market ="ALL"):
     # Backtest_yeild 연평균으로 환산
     backtest_yeild = (1+current_yeild)**(1/(day/params.YEAR_TO_DAY))
     # Backtest_yeild
-    backtest_yeild = round(current_yeild*100,2)
+    backtest_yeild = round(current_yeild,2)
 
     print("=============================================")
     print(f"{name}_Back_test 연환산수익률 {backtest_yeild:.2f}%")
@@ -100,24 +116,47 @@ def get_backtest_yeild_with_name(name, year=3, market ="ALL"):
     # 투자전략 효과성
     invest_efficiency = 0
     
-    if (backtest_yeild > 0) and (yeild_prediction >params.TRADING_HURDLE[0]):
+    if (backtest_yeild >= params.KOLIBOR) and (yeild_prediction >params.TRADING_HURDLE[0]):
         recommend_position = "매수"
         invest_efficiency = 1
         print("BUY!!! 매수전략이 유리합니다.")
-    elif (backtest_yeild >= 0):
+    elif (backtest_yeild >= params.KOLIBOR):
         recommend_position = "홀딩/관망"
         invest_efficiency = 1
         print("투자전략이 효과적이지만 현재 매수적기는 아닙니다.")
-    elif (backtest_yeild < 0) and (yeild_prediction <params.TRADING_HURDLE[1]):
+    elif (backtest_yeild < params.KOLIBOR) and (yeild_prediction <params.TRADING_HURDLE[1]):
         recommend_position = "매도"
         print("SELL!!! 매도전략이 유리합니다.")
-    elif (backtest_yeild < 0):
+    elif (backtest_yeild < params.KOLIBOR):
         recommend_position = "홀딩/관망"
         print("투자하기에 현재 투자전략이 부적절합니다.")
-    print("=============================================")
-    return [backtest_yeild, yeild_prediction, recommend_position, invest_efficiency]
+    return [backtest_yeild, yeild_prediction, recommend_position, invest_efficiency, stock_price_info, stock_fundamental_info]
+
+print(get_backtest_yeild_with_name("영원무역"))
+
+
+
+
 
 
 # invest_efficiency 가 1이면서, recommend_position이 '매수'인것만 추천해줄것!
 # print(get_backtest_yeild_with_name("삼성전자"))
 
+"""
+#load the best model
+mlp.load_state_dict(torch.load('mlp.model'))
+
+test = pd.read_csv('../input/test_V2.csv')
+#data formatting
+x_test = test.drop(['Id', 'groupId', 'matchId', 'matchType'],axis=1)
+x_test = torch.tensor(x_test.values,dtype=torch.float,device=device)
+
+#predict
+y_pred = mlp(x_test)
+y_pred = y_pred.data.cpu().numpy()
+
+#format to csv file
+y_pred = pd.DataFrame(y_pred,columns=['winPlacePerc'])
+y_pred['Id'] = test['Id']
+y_pred = y_pred[['Id', 'winPlacePerc']]
+"""

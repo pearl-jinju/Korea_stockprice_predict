@@ -15,6 +15,16 @@ from torch import nn, optim
 import torch.nn.functional as F    
 
 
+# random_seed 설정
+SEED = 1
+# model Hyperparams
+batch_size = 15000
+hidden_dim = 64
+epochs = 50
+dropout = 0.5
+
+
+
 # defining utility class
 # by defining this, you only have to write "for loop" to load minibatch data
 class DataLoader(object):
@@ -72,8 +82,8 @@ class MLP(nn.Module):
     def forward(self, x):
         x = self.LeakyReLU(self.norm1(self.linear1(x)))
         x = self.drop2D(x)
-        x = torch.sigmoid(self.norm2(self.linear2(x)))
-        x = torch.tanh(self.linear3(x))
+        x = self.LeakyReLU(self.norm2(self.linear2(x)))
+        x = self.LeakyReLU(self.linear3(x))
         x = x.squeeze(1)
         return x
 
@@ -95,13 +105,6 @@ if __name__=='__main__':
 
     Y_dataset = vector_dataset.iloc[:,params.ANALYSIS_DAY*2:].reset_index(drop=True)
 
-    # random_seed 설정
-    SEED = 1
-    # model Hyperparams
-    batch_size = 15000
-    hidden_dim = 64
-    epochs = 50
-    dropout = 0.5
 
     # Train Vaild Test split
     X_train, X_vaild, Y_train, Y_vaild = train_test_split(X_dataset, Y_dataset, test_size=0.1, random_state=SEED, shuffle=True)
@@ -150,7 +153,6 @@ if __name__=='__main__':
         for batch_id, (batch_x, batch_y) in enumerate(train_dataloader):
             
             y_pred = mlp(batch_x)
-
             loss = mae_loss(y_pred, batch_y)
 
             optimizer.zero_grad()
@@ -161,7 +163,7 @@ if __name__=='__main__':
             elapsed_min = int(elapsed_time / 60)
             elapsed_sec = elapsed_time - 60 * elapsed_min
 
-            print('\rEpoch:{}/{}: Batch:{}/{} Loss:{:.4f} Time:{}m{:.2f}s'.format(epoch + 1, epochs ,batch_id, 
+            print('\rEpoch:{}/{} Batch:{}/{} Loss:{:.4f} Time:{}m{:.2f}s'.format(epoch + 1, epochs ,batch_id, 
                                                                             num_batch, loss.item(),
                                                                             elapsed_min, elapsed_sec), end='')
         scheduler.step()
@@ -170,12 +172,12 @@ if __name__=='__main__':
         valid_loss = 0
         best_loss = np.inf
         num_batch = valid_dataloader.data_size // valid_dataloader.batch_size + 1
-        
-        for batch_id, (batch_x, batch_y) in enumerate(valid_dataloader):
-        
-            y_pred = mlp(batch_x)
-            loss = mae_loss(y_pred, batch_y)
-            valid_loss += loss.item()
+        with torch.no_grad():
+            for batch_id, (batch_x, batch_y) in enumerate(valid_dataloader):
+            
+                y_pred = mlp(batch_x)
+                loss = mae_loss(y_pred, batch_y)
+                valid_loss += loss.item()
         
         valid_loss /= num_batch
         valid_losses.append(valid_loss)
@@ -183,10 +185,25 @@ if __name__=='__main__':
         #save model when validation loss is minimum
         if valid_loss < best_loss:
             best_loss = valid_loss
-            torch.save(mlp.state_dict(), f'../model/mlp_model_batch_{batch_size}_best_{best_loss:.6f}.model')  
+            torch.save(mlp.state_dict(), f'../model/mlp_model_batch_{batch_size}_best_{best_loss:.6f}.model')
+            m = torch.jit.script(mlp)  
+            torch.jit.save(m, f'../model/mlp_model_batch_{batch_size}_best_{best_loss:.6f}.pt')
         
         print('Valid Loss:{:.4f}'.format(valid_loss))
         
+
+
+# model = torch.jit.load('model_scripted.pt')
+# model.eval()
+
+
+# extra_files = torch._C.ExtraFilesMap()
+# extra_files['txt1'] = ""
+# extra_files['path'] = ""
+# loaded_model = torch.jit.load('./scriptmodule.pt', _extra_files=extra_files)
+# loaded_model.state_dict()
+
+
 
     # #plot validation loss curve, this may help to notice overfitting
     # plt.figure(figsize=(16,5))
