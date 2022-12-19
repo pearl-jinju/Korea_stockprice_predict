@@ -6,8 +6,12 @@ from tqdm import tqdm
 import params
 import pandas as pd
 import numpy as np
-import torch
+from mplfinance.original_flavor import candlestick_ohlc
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
 
+import matplotlib.dates as mdates
 
 # df = bond.get_otc_treasury_yields(date_from_now(), date_from_now(), "국고채2년")
 # print(df.head())
@@ -19,17 +23,27 @@ def get_info():
     return [top10, bottom10]
 
 
-# 종목명을 넣으면 vector로 변환하여 day동안의 모델을 적용한 수익률과 실제수익률을 비교하는 함수를 출력
-def get_backtest_yeild_with_name(name, buy_cond, sell_cond,year=3, market ="ALL"):
-    day =  params.YEAR_TO_DAY * year
-    print("get_stock_basic_info....")
-    all_stock_df = get_stock_basic_info()
-            
-    cond = all_stock_df['종목명'] == name
-    ticker = all_stock_df.loc[cond,'티커'].values[0]
+# # 주가 dataframe을 넣으면 차트를 반환하는 함수
+# def get_chart(name, price_info_df, buy_date=[], sell_date=[]):
+#     price_df = price_info_df
+#     # date2num으로 날짜 변경
+#     price_df["날짜"] = mdates.date2num(price_df["날짜"].values)
     
-    print("get_stock_price_info....")
-    result_df = get_stock_price_info(ticker,market,"ALL", day)
+#     stock_price_info_all = price_df.iloc[:,:5]
+#     fig, ax = plt.subplots(figsize=(30,20))
+#     ax.set_title(f'{name} 차트', fontsize=25)
+#     ax.set_ylabel("주가")
+#     img = candlestick_ohlc(ax=ax, quotes=stock_price_info_all.values, width=0.5, colorup='r', colordown='b')
+#     plt.imshow(img)
+
+
+
+# 종목명을 넣으면 vector로 변환하여 day동안의 모델을 적용한 수익률과 실제수익률을 비교하는 함수를 출력
+def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df):
+    result_df = price_info_df
+    # get_chart(name,price_info_df)
+    
+    stock_price_info_close = result_df.iloc[:,1:5]['종가']
     stock_price_info = result_df.iloc[-2:,1:5]
     stock_fundamental_info = result_df.iloc[-1:,-6:-2]
     stock_fundamental_info.round(2)
@@ -41,22 +55,22 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond,year=3, market ="ALL"
     # 현재 종목보유상태 초기화
     trading_position = "N"
     # 시작 보유 자산
-    start_trading_price = 100
-    trading_price = 100
+    start_trading_price = 1000000
+    trading_price = 1000000
     # 현재 보유 주수
     trading_amount = 0
     # 현재 수익률 초기화
     current_yeild = 0
     print("Back_test....")
-    
-    
+        
     final_lgb_model = joblib.load("../model/lgbm_model_2.90_2.90_iter_23744_rate.pkl") 
 
     for idx in tqdm(range(len(result_df)-(params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY)+1)):
         row_vector = result_df.iloc[idx:idx+params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY]
+        price_vector = stock_price_info_close.iloc[idx:idx+params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY]
         vector_df = row_vector.iloc[:params.ANALYSIS_DAY]
-        buy_price = row_vector.values[params.ANALYSIS_DAY]
-        sell_price = row_vector.values[-1]  
+        buy_price = price_vector.values[params.ANALYSIS_DAY]
+        sell_price = price_vector.values[-1]  
         period_yeild = round(((sell_price-buy_price)/buy_price)*100,2)
         # list로(vector) 변환: features + target  
         vector_df = vector_df.values
@@ -72,9 +86,12 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond,year=3, market ="ALL"
             # 만약 매수 허들을 넘었다면 매수,
             if yeild_prediction >= buy_cond:
                 # 보유 상태로 변경
+                
                 trading_position = "Y"
                 trading_amount = trading_price / buy_price
+                print(f"{trading_amount:.1f}주 주당{buy_price:.1f}원 매수 , 평가금액: {trading_price:.1f}원")
                 trading_price = 0
+                
             # 만약 매도 허들 이하라면 무시,
             elif yeild_prediction <=sell_cond:
                 continue
@@ -88,75 +105,54 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond,year=3, market ="ALL"
             # 만약 매도 허들 이하라면 매도,
             elif yeild_prediction <= sell_cond:
                 trading_position = "N"
-                trading_price = trading_amount*buy_price
+                trading_price = trading_amount*sell_price
+                print(f"{trading_amount:.1f}주 주당{sell_price:.1f}원 매도 , 평가금액: {trading_price:.1f}원")
                 trading_amount = 0
+                
             # 만약 중립구간이라면 무시
             else:
                 continue
-            
+
         # 현재 투자전략 수익률
         # 현재 보유중이라면
         if trading_position=="Y":
-            current_yeild = (trading_amount*buy_price)/start_trading_price - 1
+            current_yeild = (trading_amount*sell_price)/start_trading_price - 1
         # 현재 보유중이지 않다면
         elif trading_position=="N":
             current_yeild = trading_price/start_trading_price - 1
-
-    # Backtest_yeild 연평균으로 환산
-    backtest_yeild = (1+current_yeild)**(1/(day/params.YEAR_TO_DAY))
-    # Backtest_yeild
-    backtest_yeild = round(current_yeild,2)
-
-    print("=============================================")
-    print(f"{name}_Back_test 연환산수익률 {backtest_yeild:.2f}%")
-    print(f"당일기준 {params.PERIOD_YEILD_DAY}일 후 예상 보유수익률 {yeild_prediction:.2f}%")
+        print(f"현재 수익률은 {current_yeild*100:.2f}%입니다.")
     
-    # 추천 매매포지션
+    # Backtest_yeild 연평균으로 환산
+    backtest_yeild = ((1+current_yeild)**(1/(year))-1)*100
+    
+    # Backtest_yeild
+    backtest_yeild = round(backtest_yeild,2)
+
+    print(f"{name}_Back_test 연환산수익률 {backtest_yeild:.2f}%")
+    print(f"{params.PERIOD_YEILD_DAY}일 후 예상 보유수익률 {yeild_prediction:.2f}%")
+    
+    # 추천 매매포지션 초기화
     recommend_position = ""
-    # 투자전략 효과성
+    # 투자전략 효율성 체크 초기화
     invest_efficiency = 0
     
-    if (backtest_yeild >= params.KOLIBOR) and (yeild_prediction >params.TRADING_HURDLE[0]):
+    # backtest 수익률이 기준금리보다 높고, 시뮬레이션 조건 매수수익률보다 높다면,
+    if (backtest_yeild >= params.KOLIBOR) and (yeild_prediction > buy_cond):
         recommend_position = "매수"
         invest_efficiency = 1
-        print("BUY!!! 매수 추천")
+        # print("BUY!!! 매수 추천")
+    # backtest 수익률이 기준금리보다 높지만, 시뮬레이션 조건 매수수익률보다 낮다면,    
     elif (backtest_yeild >= params.KOLIBOR):
         recommend_position = "홀딩/관망"
         invest_efficiency = 1
-        print("투자전략이 효과적이지만 현재 매수시기는 아닙니다.")
-    elif (backtest_yeild < params.KOLIBOR) and (yeild_prediction <params.TRADING_HURDLE[1]):
+        # print("투자전략이 효과적이지만 현재 매수시기는 아닙니다.")
+    # backtest 수익률이 기준금리보다 낮고, 시뮬레이션 조건 매도수익률보다 낮다면, 
+    elif (backtest_yeild < params.KOLIBOR) and (yeild_prediction < sell_cond):
         recommend_position = "매도"
-        print("SELL!!! 매도 추천")
+        # print("SELL!!! 매도 추천")
+    # backtest 수익률이 기준금리보다 낮지만, 시뮬레이션 조건 매도수익률보다 높다면, 
     elif (backtest_yeild < params.KOLIBOR):
         recommend_position = "홀딩/관망"
-        print("투자하기에 현재 투자전략이 부적절합니다.")
-    return [backtest_yeild, yeild_prediction, recommend_position, invest_efficiency, stock_price_info, stock_fundamental_info]
-
-# print(get_backtest_yeild_with_name("영원무역"))
-
-
-
-
-
-
-# invest_efficiency 가 1이면서, recommend_position이 '매수'인것만 추천해줄것!
-# print(get_backtest_yeild_with_name("삼성전자"))
-
-"""
-#load the best model
-mlp.load_state_dict(torch.load('mlp.model'))
-
-test = pd.read_csv('../input/test_V2.csv')
-#data formatting
-x_test = test.drop(['Id', 'groupId', 'matchId', 'matchType'],axis=1)
-x_test = torch.tensor(x_test.values,dtype=torch.float,device=device)
-
-#predict
-y_pred = mlp(x_test)
-y_pred = y_pred.data.cpu().numpy()
-
-#format to csv file
-y_pred = pd.DataFrame(y_pred,columns=['winPlacePerc'])
-y_pred['Id'] = test['Id']
-y_pred = y_pred[['Id', 'winPlacePerc']]
-"""
+        # print("투자하기에 현재 투자전략이 부적절합니다.")
+          
+    return [backtest_yeild, yeild_prediction, recommend_position, invest_efficiency, stock_price_info, stock_fundamental_info, buy_cond, sell_cond]
