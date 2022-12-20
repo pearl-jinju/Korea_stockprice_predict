@@ -79,7 +79,8 @@ def patten_to_vector(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day:int=
     with open(f'../data/Korea_stock_Dataset_{analysis_day}_{period_yeild_day}_{year_to_day}_{moving_average_day}_{new_listing_reduction_year}_divide_buyprice.pkl', 'wb') as f:
         pickle.dump(result_df, f)
     print("vectorizing_COMPLETE")
-    
-patten_to_vector()
+
+if __name__=='__main__':
+    patten_to_vector()
 
 # 허스트 지수 산출
