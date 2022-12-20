@@ -6,12 +6,12 @@ from tqdm import tqdm
 import params
 import pandas as pd
 import numpy as np
-from mplfinance.original_flavor import candlestick_ohlc
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import matplotlib.dates as mdates
+# from mplfinance.original_flavor import candlestick_ohlc
+# import matplotlib
+# matplotlib.use('TkAgg')
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
+# import matplotlib.dates as mdates
 
 
 def ratio_judge(x, critical_point, diretion="F"):
@@ -46,27 +46,27 @@ def get_high_low_info():
     return [top10, bottom10]
 
 
-# 주가 dataframe을 넣으면 차트를 반환하는 함수
-def get_chart(name, price_info_df, buy_date=[], sell_date=[]):
-    price_df = price_info_df
-    # date2num으로 날짜 변경
-    price_df["날짜"] = mdates.date2num(price_df["날짜"].values)
+# # 주가 dataframe을 넣으면 차트를 반환하는 함수
+# def get_chart(name, price_info_df, buy_date=[], sell_date=[]):
+#     price_df = price_info_df
+#     # date2num으로 날짜 변경
+#     price_df["날짜"] = mdates.date2num(price_df["날짜"].values)
     
-    fig = plt.figure(figsize=(8, 5))
-    fig.set_facecolor('w')
-    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
-    axes = []
-    axes.append(plt.subplot(gs[0]))
-    axes.append(plt.subplot(gs[1], sharex=axes[0]))
-    axes[0].get_xaxis().set_visible(False)
-    x = np.arange(len(price_df.index))
-    ohlc = price_df[['시가', '고가', '저가', '종가']].astype(int).values
-    dohlc = np.hstack((np.reshape(x, (-1, 1)), ohlc))
-    # 봉차트
-    candlestick_ohlc(axes[0], dohlc, width=0.5, colorup='r', colordown='b')
+#     fig = plt.figure(figsize=(8, 5))
+#     fig.set_facecolor('w')
+#     gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+#     axes = []
+#     axes.append(plt.subplot(gs[0]))
+#     axes.append(plt.subplot(gs[1], sharex=axes[0]))
+#     axes[0].get_xaxis().set_visible(False)
+#     x = np.arange(len(price_df.index))
+#     ohlc = price_df[['시가', '고가', '저가', '종가']].astype(int).values
+#     dohlc = np.hstack((np.reshape(x, (-1, 1)), ohlc))
+#     # 봉차트
+#     candlestick_ohlc(axes[0], dohlc, width=0.5, colorup='r', colordown='b')
 
-    plt.tight_layout()
-    plt.show()
+#     plt.tight_layout()
+#     plt.show()
 
 
 

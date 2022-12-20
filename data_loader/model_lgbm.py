@@ -9,8 +9,6 @@ from lightgbm import LGBMRegressor, plot_importance
 import optuna
 from optuna import Trial
 from optuna.samplers import TPESampler
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 from tqdm import tqdm
 import params
 

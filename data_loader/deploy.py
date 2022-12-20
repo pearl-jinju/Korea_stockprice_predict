@@ -261,7 +261,7 @@ elif side_menu_name=='상승률/하락률 상위종목':
     
     with st.container():
         # 종목명 종가 등락률
-        col1,col2= st.columns(2)
+        col1,col2 = st.columns(2)
         col1.header(f"상승률 상위")
         col2.header(f"하락률 상위")
         for i in range(10):

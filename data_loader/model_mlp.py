@@ -5,8 +5,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.utils import shuffle
 from sklearn.preprocessing import MinMaxScaler
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 from tqdm import tqdm
 import time
 import params
