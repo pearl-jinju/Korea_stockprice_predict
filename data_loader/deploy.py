@@ -44,6 +44,7 @@ if side_menu_name=='주식 수익률 예측':
 
     # 버튼 설계
     if st.button("시뮬레이션"):
+        st.success('분석을 시작합니다.')
         # 로딩바 초기화
         my_bar = st.progress(0)
 
@@ -54,7 +55,7 @@ if side_menu_name=='주식 수익률 예측':
         # 종목 기본정보 불러오기
         all_stock_info_df = get_stock_basic_info(0, market="ALL", detail="BASIC")
         # 티커 추출
-        cond = all_stock_info_df['종목명'] == stock_name
+        cond = all_stock_info_df['종목명'] == stock_name   
         ticker = all_stock_info_df.loc[cond,'티커'].values[0]
         # 종목 가격 관련 정보 불러오기
         result_df = get_stock_price_info(ticker,"ALL","ALL", params.YEAR_TO_DAY*analysys_year)
@@ -82,6 +83,7 @@ if side_menu_name=='주식 수익률 예측':
         percent_complete = 0
         percent_tick = 1/(len_idx+1)
          
+
         # 만약 목표로 하는 수익률 이하로 계속 backtest 수익률이 나온다면 반복하되,
         with st.spinner('Wait for it...'):
             # 종료조건, target_cond 보다 높은 backtest_yeild가 발견되거나, iter를 다 돌때 까지
@@ -93,6 +95,7 @@ if side_menu_name=='주식 수익률 예측':
                   
                 # 종료조건, 모든 조합이 다 돈 경우 후보중 최적 조합을 뽑는다.
                 if  (idx==len_idx):
+                    percent_complete = 1
                     break
                     
                 # 수익률 조합 꺼내기
@@ -106,6 +109,7 @@ if side_menu_name=='주식 수익률 예측':
                     best_result = backtest_yeild
                     best_idx = idx
                 idx +=1
+            percent_complete = 1
                 
             comb = combinations_for_use[best_idx]
         result = get_backtest_yeild_with_name(stock_name, comb[1], comb[0], analysys_year, result_df)                    
@@ -257,7 +261,7 @@ elif side_menu_name=='상승률/하락률 상위종목':
     
     with st.container():
         # 종목명 종가 등락률
-        col1,col2 = st.columns(2)
+        col1,col2= st.columns(2)
         col1.header(f"상승률 상위")
         col2.header(f"하락률 상위")
         for i in range(10):
