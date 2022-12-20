@@ -1,17 +1,19 @@
 import streamlit as st
 import pandas as pd
 from predict import get_backtest_yeild_with_name, get_high_low_info, ratio_judge
-from loader import date_from_now, get_stock_basic_info, get_stock_price_info, get_index_fundamental_info
+from loader import date_from_now, get_stock_basic_info, get_stock_price_info, get_index_fundamental_info, get_included_thema_stocks_in_thema
 import random
 from itertools import combinations
 import params
+import numpy as np
 
 
 st.sidebar.header('MENU')
-side_menu_name = st.sidebar.selectbox('사용할 기능을 선택하세요.',['주식 수익률 예측','상승률/하락률 상위종목'])
+side_menu_name = st.sidebar.selectbox('사용할 기능을 선택하세요.',['주식 수익률 예측','종목관련 테마 조회','상승률/하락률 상위종목'])
 
 
 st.title('지금 투자해도 될까?')
+st.markdown('----')
 
 if side_menu_name=='주식 수익률 예측':
     st.header("Step 1 : 종목명 입력")
@@ -28,13 +30,15 @@ if side_menu_name=='주식 수익률 예측':
    
     # ========================================
     #매수 예측 최소범위
-    buy_min =  4
+    buy_min =  1
     #매수 예측 최대범위
-    buy_max = 6
+    buy_max = 10
     #매도 예측 최소범위
-    sell_min = -4
+    sell_min = -1
     #매도 예측 최대범위
-    sell_max = -6
+    sell_max = -10
+    #model mae 값으로 변경하며 추정
+    model_mae = 3
     # ========================================
     
 
@@ -48,7 +52,7 @@ if side_menu_name=='주식 수익률 예측':
         st.markdown("---------")
         
         # 종목 기본정보 불러오기
-        all_stock_info_df = get_stock_basic_info()
+        all_stock_info_df = get_stock_basic_info(0, market="ALL", detail="BASIC")
         # 티커 추출
         cond = all_stock_info_df['종목명'] == stock_name
         ticker = all_stock_info_df.loc[cond,'티커'].values[0]
@@ -60,15 +64,15 @@ if side_menu_name=='주식 수익률 예측':
         # 매수는 덜민감하게 반응하고, 매도는 민감하게 반응하여 수익률을 올림
 
         # 매수매도조건 생성기
-        combinations_ls = combinations(list(range(sell_max,sell_min+1))+list(range(buy_min,buy_max+1)),2)
+        combinations_ls = combinations(list(range(sell_max,sell_min+1,model_mae))+list(range(buy_min,buy_max+1,model_mae)),2)
         combinations_for_use = []
         for comb in combinations_ls:
             if (comb[0]<=0) and (comb[1]>=0):
                 combinations_for_use.append(comb)
         #최적 조합 초기화
-        best_result = -999
-        best_idx = 999
-        backtest_yeild = -999
+        best_result = -np.inf
+        best_idx = np.inf
+        backtest_yeild = -np.inf
         
         # 인덱스 
         idx = 0
@@ -129,11 +133,13 @@ if side_menu_name=='주식 수익률 예측':
         # 응답 성공 메세지
         st.success('분석 완료!')
         
+        
+        st.header("투자전략 총평")
         col1,col2 = st.columns(2)
         col1.metric("투자전략 유효성",f"{result_df['투자전략 유효성'].values[0]}")
-        col1.write(">일반적으로 연환산수익률이 기준금리보다 높다면, 효과적인 전략으로 판단합니다.")
         col2.metric(f"{analysys_year}년 Back_test 연환산수익률(%)",f"{result_df[f'{analysys_year}년 Back_test 연환산수익률(%)'].values[0]:.2f}%")
-        col2.write(">Back_test 연환산수익률(%)은 :red[현재 모델을 기준으로 매매 했을 때, 얻은 수익률로 실제 수익률과 다릅니다.]")
+        col2.write(">:red[Back_test 연환산수익률(%)은 현재 모델을 기준으로 매매 했을 때, 얻은 수익률로 실제 수익률과 다릅니다.]")
+        st.write(">일반적으로 연환산수익률이 요구수익률(ex 기준금리)보다 높다면, 효과적인 전략으로 판단합니다.")
 
         st.markdown("---------")
 
@@ -141,26 +147,29 @@ if side_menu_name=='주식 수익률 예측':
         st.write('* :red[[주 의] 투자전략이 부적합한 경우에는 예측수익률을 신뢰하지 마십시오!!!]')
         st.markdown("---------")
         
+        st.header("예측수익률 및 추천 매매포지션")
         col1,col2 = st.columns(2)
         col1.metric(f"5일 이후 예측수익률(%)",f"{result_df['5일 이후 예측수익률(%)'].values[0]:.2f}%")
-        col1.write(">시뮬레이션에 사용된 모델을 활용한 예측결과입니다.  투자전략이 부적합하다면 신뢰할 수 없습니다.")
         col2.metric("추천 매매포지션",f"{result_df['추천 매매포지션'].values[0]}")        
+        st.write(">시뮬레이션에 사용된 모델을 활용한 예측결과입니다.  투자전략이 부적합하다면 신뢰할 수 없습니다.")
+        
         
         st.markdown("---------")
         if invest_alert=='부적합':
-            st.write('* 투자전략이 부적합한 경우에는 최적 매매기준점을 제공하지 않습니다.')
+            st.write(">현재 종목은 예측모델을 활용한 매매전략을 제시하기 어렵습니다!")
+            st.write('>:red[투자전략이 부적합한 경우에는 최적 매매기준점을 제공하지 않습니다.]')
         else:
+            st.header("매매 타이밍 진단")
             col1,col2 = st.columns(2)
-            st.write('매수 매도 타이밍을 확인하세요!')
-            col1.metric("매수 기준 수익률(%)",f"{buy_cond}%",f"+ 예측값이 {buy_cond}% 이상일 때, 매수 시기입니다.")
-            col2.metric("매도 기준 수익률(%)",f"{sell_cond}%",f"- 예측값이 {sell_cond}% 이하일 때, 매도 시기입니다.")
+            col1.metric("매수 기준 예측수익률(%)",f"{buy_cond}%",f"+ 예측값이 {buy_cond}% 이상일 때, 매수 시기입니다.")
+            col2.metric("매도 기준 예측수익률(%)",f"{sell_cond}%",f"- 예측값이 {sell_cond}% 이하일 때, 매도 시기입니다.")
 
 
 
         # 기타 정보제공
         with st.spinner('Wait for it...'):
             st.markdown("---------")
-            st.caption("주가 관련정보")
+            st.header("종목 관련 정보")
             o_price_yesterday = stock_price_info['시가'].iloc[0]
             h_price_yesterday = stock_price_info['고가'].iloc[0]
             l_price_yesterday = stock_price_info['저가'].iloc[0]
@@ -181,7 +190,7 @@ if side_menu_name=='주식 수익률 예측':
             
             st.markdown("---------")
 
-            st.caption("펀더멘탈 정보")
+            st.header("종목 펀더멘탈 정보")
             st.markdown("* 지표가 시장에 비해 15% 이상 좋은경우 저평가, 나쁜경우 고평가로 판단합니다.")
             with st.spinner('Wait for it...'):
                 market_fundamental = get_index_fundamental_info(ticker)
@@ -227,6 +236,9 @@ if side_menu_name=='주식 수익률 예측':
                 col1, col2 = st.columns(2)
                 col1.metric("DIV(배당/주가)", f"{div:.2f}", div_result)
                 col2.metric("", "", "")
+                
+    st.markdown("---------")
+
 
                 
 elif side_menu_name=='상승률/하락률 상위종목':
@@ -234,40 +246,55 @@ elif side_menu_name=='상승률/하락률 상위종목':
     # 시장을 조회해서 각 업종정보를 가져와서 종합?
     top_bottom = get_high_low_info()
     top10 = top_bottom[0]
+    top10_name = top10['종목명']
+    top10_close = top10['종가']
+    top10_rate = top10['등락률']
+    
     bottom10 = top_bottom[1]
+    bottom10_name = bottom10['종목명']
+    bottom10_close = bottom10['종가']
+    bottom10_rate = bottom10['등락률']
     
+    with st.container():
+        # 종목명 종가 등락률
+        col1,col2 = st.columns(2)
+        col1.header(f"상승률 상위")
+        col2.header(f"하락률 상위")
+        for i in range(10):
+            # 종목명 종가 등락률 1~10위
+            col1,col2 = st.columns(2)
+            col1.metric( f" ", f"{top10_name.values[i]}", f"{top10_rate.values[i]:.2f}%  / {top10_close.values[i]}")
+            col2.metric( f" ",f"{bottom10_name.values[i]}", f"{bottom10_rate.values[i]:.2f}%  /  {bottom10_close.values[i]}")
 
+    
+elif side_menu_name=="종목관련 테마 조회":
+    stock_name = st.text_input('종목명을 입력하세요', value="카카오")
+    thema = get_included_thema_stocks_in_thema(stock_name)
+    thema_list = thema[0]
+    thema_stocks_df = thema[1]
+        
+    st.header("관련 테마")    
+    options = st.multiselect(
+                            f'{stock_name} 이/가 포함된 테마입니다.',
+                            thema_list,
+                            thema_list)            
     st.markdown("---------")
-    st.markdown('상승률 상위')
-    st.dataframe(top10)
-    st.markdown("하락률 상위")
-    st.dataframe(bottom10)
+    st.header("테마별 관련 종목")
+    for thema_name in options:
+        cond = thema_stocks_df['테마명']==thema_name
+        # 테마명 분리
+        result_df = thema_stocks_df[cond].iloc[:,1:]
+        # 테마 평균 수익률 계산
+        thema_average_rate = 1
+        thema_average_rate = result_df['등락률'].mean()
+        # 소수점 문제로 인해 str 형태로 임시 변경
+        result_df = result_df.astype('str')
+        result_df['종가'] = result_df['종가'].str.slice(start=0,stop=-2)
+        result_df['등락률'] = result_df['등락률'].apply(lambda x: x+"%")    
         
-              
+        st.subheader(f"{thema_name}테마 /  평균 등락률 : {thema_average_rate:.2f}%")
+        st.dataframe(result_df)
+        
 
-    # 간단 진단
-    # 초기화
-    # summary = "" 
-    # if    
-    # if (backtest_yeild > 0) and (yeild_prediction >params.TRADING_HURDLE[0]):
-    #     recommend_position = "매수"
-    #     summary = "BUY!!! 매수전략이 유리합니다."
-    # elif (backtest_yeild >= 0):
-    #     recommend_position = "홀딩/관망"
-    #     summary = "투자전략이 효과적이지만 현재 매수적기는 아닙니다."
-    # elif (backtest_yeild < 0) and (yeild_prediction <params.TRADING_HURDLE[1]):
-    #     recommend_position = "매도"
-    #     summary = "SELL!!! 매도전략이 유리합니다."
-    # elif (backtest_yeild < 0):
-    #     recommend_position = "홀딩/관망"
-    #     summary = "투자하기에 현재 투자전략이 부적절합니다."
-        
-    # con.write(summary)
-    
-    
-    
-    
-    # 예측수익률을 기준으로 한 예상 주가 차트
-    # 투자전략이 효과적인 오늘의 종목
-    # 투자
-    #streamlit run deploy.py
+elif side_menu_name=='코스피/코스닥 달력':
+    st.markdown("개발중입니다.")
