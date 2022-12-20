@@ -289,7 +289,7 @@ elif side_menu_name=="종목관련 테마 조회":
         thema_average_rate = result_df['등락률'].mean()
         # 소수점 문제로 인해 str 형태로 임시 변경
         result_df = result_df.astype('str')
-        result_df['종가'] = result_df['종가'].str.slice(start=0,stop=-2)
+        result_df['종가'] = result_df['종가'].apply(lambda x: x[:-2])
         result_df['등락률'] = result_df['등락률'].apply(lambda x: x+"%")    
         
         st.subheader(f"{thema_name}테마 /  평균 등락률 : {thema_average_rate:.2f}%")
