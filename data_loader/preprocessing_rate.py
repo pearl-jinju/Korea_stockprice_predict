@@ -15,7 +15,7 @@ import params
 
 def patten_to_vector_rate(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day:int=params.PERIOD_YEILD_DAY, year_to_day:int=params.YEAR_TO_DAY,new_listing_reduction_year:int=params.NEW_LISTING_REDUCTION_YEAR):
     # 데이터 로드
-    data_path =  "../data/stock_price_data_all_period_20221209.pickle"
+    data_path =  "..\\data\\stock_price_data_all_period_20221209.pickle"
 
     with open(data_path, 'rb') as f:
         df_raw_data_all = pickle.load(f)
@@ -96,7 +96,7 @@ def patten_to_vector_rate(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day
 
             result_df = pd.concat([result_df,temp_df])
             
-            with open(f'../data/Korea_stock_Dataset_{analysis_day}_{period_yeild_day}_{year_to_day}_{new_listing_reduction_year}RATE_2.pkl', 'wb') as f:
+            with open(f'..\\data\\Korea_stock_Dataset_{analysis_day}_{period_yeild_day}_{year_to_day}_{new_listing_reduction_year}RATE_2.pkl', 'wb') as f:
                 pickle.dump(result_df, f)
             print(idx)
             
@@ -107,7 +107,7 @@ def patten_to_vector_rate(analysis_day:int=params.ANALYSIS_DAY, period_yeild_day
 
     print(result_df)
     # save
-    with open(f'../data/Korea_stock_Dataset_{analysis_day}_{period_yeild_day}_{year_to_day}_{new_listing_reduction_year}RATE+PER+PBR.pkl', 'wb') as f:
+    with open(f'..\\data\\Korea_stock_Dataset_{analysis_day}_{period_yeild_day}_{year_to_day}_{new_listing_reduction_year}RATE+PER+PBR.pkl', 'wb') as f:
         pickle.dump(result_df, f)
     print("vectorizing_COMPLETE")
     

@@ -64,7 +64,7 @@ def objective(trial):
     if best_result > mae_test:
         best_result = mae_test
         # 모델 저장
-        joblib.dump(lgb_model, f"../model/lgbm_model_{mae:.2f}_{mae_test:.2f}_iter_{param['num_iterations']}_rate.pkl") 
+        joblib.dump(lgb_model, f"..\\model\\lgbm_model_{mae:.2f}_{mae_test:.2f}_iter_{param['num_iterations']}_rate.pkl") 
     #===========================================================================================
     return mae_test
 
