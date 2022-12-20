@@ -3,7 +3,7 @@ ANALYSIS_DAY = 50
 # 수익률 산정기간(test값 산출 기간)
 PERIOD_YEILD_DAY= 5
 # 1년으로 볼 영업일 수 
-YEAR_TO_DAY = 365
+YEAR_TO_DAY = 252
 # 이동평균일수
 MOVING_AVERAGE_DAY=244
 # 신규상장 감안 분석제거 년수

@@ -39,6 +39,7 @@ mae_vaild_ls = []
 mae_test_ls = []
 param_ls = []
 
+best_result = np.inf
 
 optuna == LGBMRegressor
 sampler = TPESampler(seed=10)
@@ -62,8 +63,10 @@ def objective(trial):
     mae = mean_absolute_error(Y_vaild, lgb_model.predict(X_vaild))
     mae_test = mean_absolute_error(Y_test, lgb_model.predict(X_test))
     print(mae, mae_test)
-    # 모델 저장
-    joblib.dump(lgb_model, f"../model/lgbm_model_{mae:.2f}_{mae_test:.2f}_iter_{param['num_iterations']}_rate.pkl") 
+    if best_result > mae_test:
+        best_result = mae_test
+        # 모델 저장
+        joblib.dump(lgb_model, f"../model/lgbm_model_{mae:.2f}_{mae_test:.2f}_iter_{param['num_iterations']}_rate.pkl") 
     #===========================================================================================
     return mae_test
 
@@ -71,19 +74,7 @@ study = optuna.create_study(direction='minimize', sampler=sampler)
 study.optimize(objective, n_trials=1)
 print(study.best_params)
 print("model saved..")
-# param = {
-#         'boosting':'dart',
-#         'objective': 'regression', # 회귀
-#         'verbose': 1,
-#         'metric': 'mae',
-#         # 'boosting': trial.suggest_categorical("boosting", ["gbdt", "dart", "goss"]),
-#         'max_depth': -1, # 무한으로 분기할것!
-#         'learning_rate': 0.007713435112024194,
-#         'n_estimators': 531,
-#         'subsample': 0.6702834114336479,
-#         'num_iterations' : 1000,
-#         'scale_pos_weight' : 1.2492535061512953
-#     }
+
 
 
 # print(study.best_params)
