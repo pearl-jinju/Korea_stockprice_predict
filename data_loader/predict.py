@@ -1,6 +1,6 @@
 from pykrx import stock
 from pykrx import bond
-from loader import date_from_now, get_stock_basic_info, get_stock_price_info
+from loader import get_stock_basic_info
 import joblib
 from tqdm import tqdm
 import params
@@ -14,7 +14,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.dates as mdates
 
 
-def ratio_judge(x, critical_point, diretion="f"):
+def ratio_judge(x, critical_point, diretion="F"):
     ''' 지표를 판단해주는 함수
     현재 지표값, 판단의 임계점, 해석의 방향(높을수록 좋다면 F, 낮을수록 좋다면 R))
     '''
@@ -84,7 +84,7 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
 
     result_df = result_df['등락률']
     
-    print("initializing simulation....")
+    # print("initializing simulation....")
     # 현재 종목보유상태 초기화
     trading_position = "N"
     # 시작 보유 자산
@@ -94,7 +94,7 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
     trading_amount = 0
     # 현재 수익률 초기화
     current_yeild = 0
-    print("Back_test....")
+    # print("Back_test....")
         
     final_lgb_model = joblib.load("../model/lgbm_model_2.90_2.90_iter_23744_rate.pkl") 
 
@@ -122,7 +122,7 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
                 
                 trading_position = "Y"
                 trading_amount = trading_price / buy_price
-                print(f"{trading_amount:.1f}주 주당{buy_price:.1f}원 매수 , 평가금액: {trading_price:.1f}원")
+                # print(f"{trading_amount:.1f}주 주당{buy_price:.1f}원 매수 , 평가금액: {trading_price:.1f}원")
                 trading_price = 0
                 
             # 만약 매도 허들 이하라면 무시,
@@ -139,7 +139,7 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
             elif yeild_prediction <= sell_cond:
                 trading_position = "N"
                 trading_price = trading_amount*sell_price
-                print(f"{trading_amount:.1f}주 주당{sell_price:.1f}원 매도 , 평가금액: {trading_price:.1f}원")
+                # print(f"{trading_amount:.1f}주 주당{sell_price:.1f}원 매도 , 평가금액: {trading_price:.1f}원")
                 trading_amount = 0
                 
             # 만약 중립구간이라면 무시
@@ -153,7 +153,7 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
         # 현재 보유중이지 않다면
         elif trading_position=="N":
             current_yeild = trading_price/start_trading_price - 1
-        print(f"현재 수익률은 {current_yeild*100:.2f}%입니다.")
+        # print(f"현재 수익률은 {current_yeild*100:.2f}%입니다.")
     
     # Backtest_yeild 연평균으로 환산
     backtest_yeild = ((1+current_yeild)**(1/(year))-1)*100
@@ -161,8 +161,8 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
     # Backtest_yeild
     backtest_yeild = round(backtest_yeild,2)
 
-    print(f"{name}_Back_test 연환산수익률 {backtest_yeild:.2f}%")
-    print(f"{params.PERIOD_YEILD_DAY}일 후 예상 보유수익률 {yeild_prediction:.2f}%")
+    # print(f"{name}_Back_test 연환산수익률 {backtest_yeild:.2f}%")
+    # print(f"{params.PERIOD_YEILD_DAY}일 후 예상 보유수익률 {yeild_prediction:.2f}%")
     
     # 추천 매매포지션 초기화
     recommend_position = ""
