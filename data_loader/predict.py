@@ -10,12 +10,35 @@ from mplfinance.original_flavor import candlestick_ohlc
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-
+import matplotlib.gridspec as gridspec
 import matplotlib.dates as mdates
 
-# df = bond.get_otc_treasury_yields(date_from_now(), date_from_now(), "국고채2년")
-# print(df.head())
-def get_info():
+
+def ratio_judge(x, critical_point, diretion="f"):
+    ''' 지표를 판단해주는 함수
+    현재 지표값, 판단의 임계점, 해석의 방향(높을수록 좋다면 F, 낮을수록 좋다면 R))
+    '''
+    judge_high = ""
+    judge_low = ""
+    if diretion == "F":
+        judge_high = "저평가"
+        judge_low = "고평가"
+    elif diretion == "R":
+        judge_high = "고평가"
+        judge_low = "저평가"
+        
+    if x>= critical_point:
+        return judge_high
+    elif -x<=critical_point:
+        return judge_low
+    else:
+        return "보통"
+
+
+def get_high_low_info():
+    """
+    주식의 모든 정보를 가져와 정렬 후, 상위/하위 종목을 반환하는 함수
+    """
     all_stock_df = get_stock_basic_info()
     # 등락률 상위종목
     top10 = all_stock_df.sort_values(by='등락률',ascending=False)[['종목명','종가','등락률']].iloc[:10,:]
@@ -23,18 +46,28 @@ def get_info():
     return [top10, bottom10]
 
 
-# # 주가 dataframe을 넣으면 차트를 반환하는 함수
-# def get_chart(name, price_info_df, buy_date=[], sell_date=[]):
-#     price_df = price_info_df
-#     # date2num으로 날짜 변경
-#     price_df["날짜"] = mdates.date2num(price_df["날짜"].values)
+# 주가 dataframe을 넣으면 차트를 반환하는 함수
+def get_chart(name, price_info_df, buy_date=[], sell_date=[]):
+    price_df = price_info_df
+    # date2num으로 날짜 변경
+    price_df["날짜"] = mdates.date2num(price_df["날짜"].values)
     
-#     stock_price_info_all = price_df.iloc[:,:5]
-#     fig, ax = plt.subplots(figsize=(30,20))
-#     ax.set_title(f'{name} 차트', fontsize=25)
-#     ax.set_ylabel("주가")
-#     img = candlestick_ohlc(ax=ax, quotes=stock_price_info_all.values, width=0.5, colorup='r', colordown='b')
-#     plt.imshow(img)
+    fig = plt.figure(figsize=(8, 5))
+    fig.set_facecolor('w')
+    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+    axes = []
+    axes.append(plt.subplot(gs[0]))
+    axes.append(plt.subplot(gs[1], sharex=axes[0]))
+    axes[0].get_xaxis().set_visible(False)
+    x = np.arange(len(price_df.index))
+    ohlc = price_df[['시가', '고가', '저가', '종가']].astype(int).values
+    dohlc = np.hstack((np.reshape(x, (-1, 1)), ohlc))
+    # 봉차트
+    candlestick_ohlc(axes[0], dohlc, width=0.5, colorup='r', colordown='b')
+
+    plt.tight_layout()
+    plt.show()
+
 
 
 
@@ -44,7 +77,7 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
     # get_chart(name,price_info_df)
     
     stock_price_info_close = result_df.iloc[:,1:5]['종가']
-    stock_price_info = result_df.iloc[-2:,1:5]
+    stock_price_info_2days = result_df.iloc[-2:,1:5]
     stock_fundamental_info = result_df.iloc[-1:,-6:-2]
     stock_fundamental_info.round(2)
     del stock_fundamental_info['EPS']
@@ -155,4 +188,4 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
         recommend_position = "홀딩/관망"
         # print("투자하기에 현재 투자전략이 부적절합니다.")
           
-    return [backtest_yeild, yeild_prediction, recommend_position, invest_efficiency, stock_price_info, stock_fundamental_info, buy_cond, sell_cond]
+    return [backtest_yeild, yeild_prediction, recommend_position, invest_efficiency, stock_price_info_2days, stock_fundamental_info, buy_cond, sell_cond]
