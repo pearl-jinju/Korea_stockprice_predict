@@ -103,7 +103,7 @@ ta==0.10.2
 threadpoolctl==3.1.0
 toml==0.10.2
 toolz==0.12.0
-torch==1.13.0+cu116
+# torch==1.13.0+cu116
 torchaudio==0.13.0+cu116
 torchvision==0.14.0+cu116
 tornado==6.2
