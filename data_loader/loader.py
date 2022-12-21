@@ -226,7 +226,7 @@ def get_included_thema_stocks_in_thema(name:str):
     """
     stock_name = name
 
-    with open(r'..\data\thema_data.pkl', 'rb') as f:
+    with open('thema_data.pkl', 'rb') as f:
         df = pickle.load(f)
     #종목 기초정보
     df_change = get_stock_basic_info(day=0, market="ALL", detail="BASIC")
