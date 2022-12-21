@@ -25,18 +25,18 @@ if side_menu_name=='주식 수익률 예측':
     st.markdown(f"* 매매전략에서의 요구수익률을 의미합니다. 기준금리, 5년물 국채 , 또는 다른 지표들이 기준이 될수 있습니다.")
     st.markdown('----')
     st.header("Step 3 : 시뮬레이션 기간 입력")
-    analysys_year = st.number_input('시뮬레이션 기간을 입력하세요. (단위 : 년)', value=3)
+    analysys_year = st.number_input('시뮬레이션 기간을 입력하세요. (단위 : 년)', value=1)
     st.write(f"* :green[학습된 투자 전략으로 {analysys_year}년의 기간동안 시뮬레이션을 실행]합니다. 기간이 길어질수록 분석시간이 늘어납니다.")
    
     # ========================================
     #매수 예측 최소범위
-    buy_min =  1
+    buy_min =  3
     #매수 예측 최대범위
-    buy_max = 10
+    buy_max = 8
     #매도 예측 최소범위
-    sell_min = -1
+    sell_min = -3
     #매도 예측 최대범위
-    sell_max = -10
+    sell_max = -7
     #model mae 값으로 변경하며 추정
     model_mae = 3
     # ========================================
@@ -44,7 +44,7 @@ if side_menu_name=='주식 수익률 예측':
 
     # 버튼 설계
     if st.button("시뮬레이션"):
-        st.success('분석을 시작합니다.')
+        st.success('분석을 시작합니다. 잠시만 기다려주세요...')
         # 로딩바 초기화
         my_bar = st.progress(0)
 
@@ -112,66 +112,66 @@ if side_menu_name=='주식 수익률 예측':
             percent_complete = 1
                 
             comb = combinations_for_use[best_idx]
-        result = get_backtest_yeild_with_name(stock_name, comb[1], comb[0], analysys_year, result_df)                    
-        backtest_yeild =  result[0]
-        yeild_prediction = result[1]
-        recommend_position = result[2]
-        invest_efficiency = result[3]
-        stock_price_info = result[4]
-        stock_fundamental_info = result[5]
-        sell_cond = result[7]
-        buy_cond = result[6]
-        invest_alert = ""
-        if invest_efficiency==1:
-            invest_efficiency = "투자전략 적합"
-            invest_alert = "적합"
+            result = get_backtest_yeild_with_name(stock_name, comb[1], comb[0], analysys_year, result_df)                    
+            backtest_yeild =  result[0]
+            yeild_prediction = result[1]
+            recommend_position = result[2]
+            invest_efficiency = result[3]
+            stock_price_info = result[4]
+            stock_fundamental_info = result[5]
+            sell_cond = result[7]
+            buy_cond = result[6]
+            invest_alert = ""
+            if invest_efficiency==1:
+                invest_efficiency = "투자전략 적합"
+                invest_alert = "적합"
+                
+            elif invest_efficiency==0:
+                invest_efficiency = "투자전략 부적합"
+                invest_alert = "부적합"
+
+
+            result_ls = [[backtest_yeild, yeild_prediction, recommend_position, invest_efficiency]]    
+            result_df = pd.DataFrame(result_ls)
+            result_df.columns =[ f"{analysys_year}년 Back_test 연환산수익률(%)" , "5일 이후 예측수익률(%)",  "추천 매매포지션" , "투자전략 유효성"]
+            # 응답 성공 메세지
+            st.success('분석 완료!')
             
-        elif invest_efficiency==0:
-            invest_efficiency = "투자전략 부적합"
-            invest_alert = "부적합"
-
-
-        result_ls = [[backtest_yeild, yeild_prediction, recommend_position, invest_efficiency]]    
-        result_df = pd.DataFrame(result_ls)
-        result_df.columns =[ f"{analysys_year}년 Back_test 연환산수익률(%)" , "5일 이후 예측수익률(%)",  "추천 매매포지션" , "투자전략 유효성"]
-        # 응답 성공 메세지
-        st.success('분석 완료!')
-        
-        
-        st.header("투자전략 총평")
-        col1,col2 = st.columns(2)
-        col1.metric("투자전략 유효성",f"{result_df['투자전략 유효성'].values[0]}")
-        col2.metric(f"{analysys_year}년 Back_test 연환산수익률(%)",f"{result_df[f'{analysys_year}년 Back_test 연환산수익률(%)'].values[0]:.2f}%")
-        col2.write(">:red[Back_test 연환산수익률(%)은 현재 모델을 기준으로 매매 했을 때, 얻은 수익률로 실제 수익률과 다릅니다.]")
-        st.write(">일반적으로 연환산수익률이 요구수익률(ex 기준금리)보다 높다면, 효과적인 전략으로 판단합니다.")
-
-        st.markdown("---------")
-
-        st.write('* :green[투자전략이 부적합한 경우에는 기간을 변경해보세요]')
-        st.write('* :red[[주 의] 투자전략이 부적합한 경우에는 예측수익률을 신뢰하지 마십시오!!!]')
-        st.markdown("---------")
-        
-        st.header("예측수익률 및 추천 매매포지션")
-        col1,col2 = st.columns(2)
-        col1.metric(f"5일 이후 예측수익률(%)",f"{result_df['5일 이후 예측수익률(%)'].values[0]:.2f}%")
-        col2.metric("추천 매매포지션",f"{result_df['추천 매매포지션'].values[0]}")        
-        st.write(">시뮬레이션에 사용된 모델을 활용한 예측결과입니다.  투자전략이 부적합하다면 신뢰할 수 없습니다.")
-        
-        
-        st.markdown("---------")
-        if invest_alert=='부적합':
-            st.write(">현재 종목은 예측모델을 활용한 매매전략을 제시하기 어렵습니다!")
-            st.write('>:red[투자전략이 부적합한 경우에는 최적 매매기준점을 제공하지 않습니다.]')
-        else:
-            st.header("매매 타이밍 진단")
+            
+            st.header("투자전략 총평")
             col1,col2 = st.columns(2)
-            col1.metric("매수 기준 예측수익률(%)",f"{buy_cond}%",f"+ 예측값이 {buy_cond}% 이상일 때, 매수 시기입니다.")
-            col2.metric("매도 기준 예측수익률(%)",f"{sell_cond}%",f"- 예측값이 {sell_cond}% 이하일 때, 매도 시기입니다.")
+            col1.metric("투자전략 유효성",f"{result_df['투자전략 유효성'].values[0]}")
+            col2.metric(f"{analysys_year}년 Back_test 연환산수익률(%)",f"{result_df[f'{analysys_year}년 Back_test 연환산수익률(%)'].values[0]:.2f}%")
+            col2.write(">:red[Back_test 연환산수익률(%)은 현재 모델을 기준으로 매매 했을 때, 얻은 수익률로 실제 수익률과 다릅니다.]")
+            st.write(">일반적으로 연환산수익률이 요구수익률(ex 기준금리)보다 높다면, 효과적인 전략으로 판단합니다.")
+
+            st.markdown("---------")
+
+            st.write('* :green[투자전략이 부적합한 경우에는 기간을 변경해보세요]')
+            st.write('* :red[[주 의] 투자전략이 부적합한 경우에는 예측수익률을 신뢰하지 마십시오!!!]')
+            st.markdown("---------")
+            
+            st.header("예측수익률 및 추천 매매포지션")
+            col1,col2 = st.columns(2)
+            col1.metric(f"5일 이후 예측수익률(%)",f"{result_df['5일 이후 예측수익률(%)'].values[0]:.2f}%")
+            col2.metric("추천 매매포지션",f"{result_df['추천 매매포지션'].values[0]}")        
+            st.write(">시뮬레이션에 사용된 모델을 활용한 예측결과입니다.  투자전략이 부적합하다면 신뢰할 수 없습니다.")
+            
+            
+            st.markdown("---------")
+            if invest_alert=='부적합':
+                st.write(">현재 종목은 예측모델을 활용한 매매전략을 제시하기 어렵습니다!")
+                st.write('>:red[투자전략이 부적합한 경우에는 최적 매매기준점을 제공하지 않습니다.]')
+            else:
+                st.header("매매 타이밍 진단")
+                col1,col2 = st.columns(2)
+                col1.metric("매수 기준 예측수익률(%)",f"{buy_cond}%",f"+ 예측값이 {buy_cond}% 이상일 때, 매수 시기입니다.")
+                col2.metric("매도 기준 예측수익률(%)",f"{sell_cond}%",f"- 예측값이 {sell_cond}% 이하일 때, 매도 시기입니다.")
 
 
 
-        # 기타 정보제공
-        with st.spinner('Wait for it...'):
+            # 기타 정보제공
+
             st.markdown("---------")
             st.header("종목 관련 정보")
             o_price_yesterday = stock_price_info['시가'].iloc[0]
@@ -196,52 +196,52 @@ if side_menu_name=='주식 수익률 예측':
 
             st.header("종목 펀더멘탈 정보")
             st.markdown("* 지표가 시장에 비해 15% 이상 좋은경우 저평가, 나쁜경우 고평가로 판단합니다.")
-            with st.spinner('Wait for it...'):
-                market_fundamental = get_index_fundamental_info(ticker)
-                per = stock_fundamental_info.iloc[:,0:1].values[0][0]
-                pbr = stock_fundamental_info.iloc[:,1:2].values[0][0]
-                div = stock_fundamental_info.iloc[:,2:3].values[0][0]
-                
-                market_name = market_fundamental['market_name']
-                market_per = market_fundamental['PER']
-                market_pbr = market_fundamental['PBR']
-                market_div = market_fundamental['DIV']
-                
-                
-                # 시장대비 x% 이상인 경우 저평가
-                # 시장대비 X% 이하인 경우 저평가
-                # -x%~x% 정도 지표가 
-                
-                
-                # per은 낮을수록 저평가 (시장-종목)
-                market_stock_diff_per = market_per-per 
-                market_stock_diff_rate_per = market_stock_diff_per/market_per
-                per_judge = ratio_judge(market_stock_diff_rate_per,0.15)
-                
-                # pbr은 낮을수록 저평가 (시장-종목)
-                market_stock_diff_pbr = market_pbr-pbr
-                market_stock_diff_rate_pbr = market_stock_diff_pbr/market_pbr
-                pbr_judge = ratio_judge(market_stock_diff_rate_pbr,0.15)
-                
-                # div는 높을수록 좋음
-                market_stock_diff_div = market_div-div
-                market_stock_diff_rate_div = market_stock_diff_div/market_div
-                div_judge = ratio_judge(market_stock_diff_rate_pbr,0.15,"R")
 
-                per_result = f"{market_stock_diff_per:.2f} ({market_name} {per_judge})"
-                pbr_result = f"{market_stock_diff_pbr:.2f} ({market_name} {pbr_judge})"
-                div_result = f"{market_stock_diff_div:.2f} ({market_name} {div_judge})"
-                
+            market_fundamental = get_index_fundamental_info(ticker)
+            per = stock_fundamental_info.iloc[:,0:1].values[0][0]
+            pbr = stock_fundamental_info.iloc[:,1:2].values[0][0]
+            div = stock_fundamental_info.iloc[:,2:3].values[0][0]
             
-                col1, col2 = st.columns(2)
-                col1.metric("PER(주가/순이익)", f"{per:.2f}", per_result)
-                col2.metric("PBR(주가/장부가치)", f"{pbr:.2f}", pbr_result)
+            market_name = market_fundamental['market_name']
+            market_per = market_fundamental['PER']
+            market_pbr = market_fundamental['PBR']
+            market_div = market_fundamental['DIV']
+            
+            
+            # 시장대비 x% 이상인 경우 저평가
+            # 시장대비 X% 이하인 경우 저평가
+            # -x%~x% 정도 지표가 
+            
+            
+            # per은 낮을수록 저평가 (시장-종목)
+            market_stock_diff_per = market_per-per 
+            market_stock_diff_rate_per = market_stock_diff_per/market_per
+            per_judge = ratio_judge(market_stock_diff_rate_per,0.15)
+            
+            # pbr은 낮을수록 저평가 (시장-종목)
+            market_stock_diff_pbr = market_pbr-pbr
+            market_stock_diff_rate_pbr = market_stock_diff_pbr/market_pbr
+            pbr_judge = ratio_judge(market_stock_diff_rate_pbr,0.15)
+            
+            # div는 높을수록 좋음
+            market_stock_diff_div = market_div-div
+            market_stock_diff_rate_div = market_stock_diff_div/market_div
+            div_judge = ratio_judge(market_stock_diff_rate_div, 0.15,"R")
+
+            per_result = f"{market_stock_diff_per:.2f} ({market_name} {per_judge})"
+            pbr_result = f"{market_stock_diff_pbr:.2f} ({market_name} {pbr_judge})"
+            div_result = f"{market_stock_diff_div:.2f} ({market_name} {div_judge})"
+            
+        
+            col1, col2 = st.columns(2)
+            col1.metric("PER(주가/순이익)", f"{per:.2f}", per_result)
+            col2.metric("PBR(주가/장부가치)", f"{pbr:.2f}", pbr_result)
+            
+            col1, col2 = st.columns(2)
+            col1.metric("DIV(배당/주가)", f"{div:.2f}", div_result)
+            col2.metric("", "", "")
                 
-                col1, col2 = st.columns(2)
-                col1.metric("DIV(배당/주가)", f"{div:.2f}", div_result)
-                col2.metric("", "", "")
-                
-    st.markdown("---------")
+            st.markdown("---------")
 
 
                 

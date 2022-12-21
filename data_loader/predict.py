@@ -96,7 +96,7 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
     current_yeild = 0
     # print("Back_test....")
         
-    final_lgb_model = joblib.load(r"..\\model\\lgbm_model_2.90_2.90_iter_23744_rate.pkl") 
+    final_lgb_model = joblib.load("lgbm_model_2.90_2.90_iter_23744_rate.pkl") 
 
     for idx in tqdm(range(len(result_df)-(params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY)+1)):
         row_vector = result_df.iloc[idx:idx+params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY]
