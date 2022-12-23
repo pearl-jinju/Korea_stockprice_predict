@@ -54,8 +54,12 @@ TODO
 ### 2. 종목관련 테마 조회
 #### 1) 관련테마
 > - 종목과 관련된 테마를 출력합니다.
+
 ![image](https://user-images.githubusercontent.com/97038372/209275147-a33f3151-42a8-4002-81bc-a1cc72a2ddbe.png)
+
+
 > - 아래처럼 일부의 테마만 선택할 수 있습니다.
+
 ![image](https://user-images.githubusercontent.com/97038372/209275264-69787bd7-efdd-4830-a57b-c7e8bbbce99a.png)
  
 #### 2) 테마 관련 다른 종목/ 테마 평균 수익률/ 테마사유
