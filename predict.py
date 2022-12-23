@@ -109,13 +109,13 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df,
     # 보유일자 초기화
     holding_day = 0
     # print("Back_test....")
-    
+
     if model =="naive":
-        final_lgb_model = joblib.load("..\\model\\lgbm_model_0.28_0.27_iter_2749_day_5.pkl")
+        final_lgb_model = joblib.load(".\\model\\lgbm_model_0.60_0.60_iter_2169_day_5.pkl")
     elif model=="deep":
-        final_lgb_model = joblib.load("..\\model\\lgbm_model_0.20_0.20_iter_50001_day_5.pkl")
+        final_lgb_model = joblib.load(".\\model\\lgbm_model_0.28_0.27_iter_2749_day_5.pkl")
     elif model=="robust":    
-        final_lgb_model = joblib.load("..\\model\\lgbm_model_0.43_0.43_iter_2046_day_5.pkl")
+        final_lgb_model = joblib.load(".\\model\\lgbm_model_0.30_0.30_iter_2651_day_5.pkl")
      
 
     for idx in tqdm(range(len(result_df)-(params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY)+1)):

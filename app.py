@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 from predict import get_backtest_yeild_with_name, get_high_low_info, ratio_judge
-from loader import  get_stock_basic_info, get_stock_price_info, get_index_fundamental_info, get_included_thema_stocks_in_thema
-from sklearn.metrics import mean_absolute_error
+import loader
 import params
+from loader import get_stock_basic_info, get_stock_price_info, get_index_fundamental_info, get_included_thema_stocks_in_thema
+from sklearn.metrics import mean_absolute_error
 import numpy as np
 import time
 
@@ -17,8 +18,13 @@ sell_cond = -2
 target_cond = 3.25
 # 시뮬레이션 기간
 analysys_year = 2
+# 초기 모델값
+model_radio = '조금 복잡한 모델 (기본 모델)'
 
-
+# 초기 매수 민감도
+buy_sensitivity = buy_cond
+# 초기 손절 민감도
+sell_sensitivity = sell_cond
 # ========================================
 
 
@@ -33,45 +39,67 @@ st.markdown('----')
 if side_menu_name=='매매타이밍 추천 프로그램':
     st.header("종목명을 입력하세요!")
     stock_name = st.text_input('  ', value="카카오")
-    st.markdown('----')
-    
-    # 라디오 버튼 추가(모델 선택)
-    st.header("모델 선택")
-    model = st.radio(
-    "모델을 선택하세요",
-    ('조금 복잡한 모델','빠른 분석' ,'심층 분석'),)
-
-    if model == '빠른 분석':
-        model = 'naive'
-        analysys_year = 1
-        st.write(f'간단한 추정모델입니다.')
-    elif model == '조금 복잡한 모델':
-        model = 'deep'
-        analysys_year = 3
-        st.write(f'조금 복잡한 모델입니다. 시간이 조금 더 걸립니다. 30초 이내')
-    elif model == '심층 분석':
-        analysys_year = 10
-        model = 'robust'
-        st.write(f'매우 복잡한 모델입니다. 시간이 오래 걸립니다. 1분 이내')
-    
-    
     st.markdown("----")
-    st.header("손절 타이밍 선택")
-    # 슬라이더 추가(손절 민감도)
-    sell_sensitivity = st.slider('AI가 손절할 타이밍을 선택해주세요.', -12, -1, -3)
-    st.info(f"AI 추정값이 {sell_sensitivity}% 이상 예상되는 경우 손절하도록 설정합니다. ")
-    sell_cond = sell_sensitivity
-
-    if sell_sensitivity >= 0:
-        info_text = st.error('손절을 자주 실행합니다. 보유주기가 짧아집니다.')
-    elif sell_sensitivity >= -4:
-        info_text = st.success("일반적인 손절을 실행합니다.")
-    elif sell_sensitivity >= -8:
-        info_text = st.error("손절을 가끔 실행합니다. 보유주기가 길어집니다.")
-    elif sell_sensitivity >= -12:
-        info_text = st.error("손절을 거의 실행하지 않습니다. 보유주기가 매우 길어집니다.")
+    
+    detail1 = st.checkbox('상세설정')
+    if detail1:
+        # 라디오 버튼 추가(모델 선택)
+        st.subheader("모델 선택")
+        model_radio = st.radio(
+        "모델을 선택하세요",
+        ('조금 복잡한 모델 (기본 모델)','빠른 분석' ,'심층 분석'),)   
         
+        st.markdown("----")
+        st.subheader("매수 타이밍 선택")
+        # 슬라이더 추가(손절 민감도)
+        buy_sensitivity = st.slider('AI가 매수할 타이밍을 선택해주세요. 단위(%)', 1, 12, 6)
+        st.markdown("----")
+        st.info(f"AI 추정값이 {buy_sensitivity}% 이상 예상되는 경우 매수하도록 설정합니다. +6% 추천")
+        buy_cond = buy_sensitivity
+    
+        st.markdown("----")
+        st.subheader("손절 타이밍 선택")
+        # 슬라이더 추가(손절 민감도)
+        sell_sensitivity = st.slider('AI가 매도할 타이밍을 선택해주세요. 단위(%)', -12, -1, -3)
+        st.markdown("----")
+        st.info(f"AI 추정값이 {sell_sensitivity}% 이상 예상되는 경우 매도하도록 설정합니다. -3% 추천")
+        sell_cond = sell_sensitivity
 
+
+    #매수 민감도 인터페이스
+    if buy_sensitivity <= 3:
+        info_text = st.error('매수를 자주 실행합니다. 현금 보유일수가 짧아집니다.')
+    elif buy_sensitivity <= 6:
+        info_text = st.success("일반적인 매수를 실행합니다.")
+    elif buy_sensitivity <= 9:
+        info_text = st.warning("매수를 가끔 실행합니다. 현금 보유일수가 길어집니다.")
+    elif buy_sensitivity <= 12:
+        info_text = st.error("매수를 거의 실행하지 않습니다. 현금 보유일수가 매우 길어집니다.")
+
+        
+    #매도 민감도 인터페이스
+    if sell_sensitivity >= 0:
+        info_text = st.error('매도를 자주 실행합니다. 보유주기가 짧아집니다.')
+    elif sell_sensitivity >= -4:
+        info_text = st.success("일반적인 매도를 실행합니다.")
+    elif sell_sensitivity >= -8:
+        info_text = st.warning("매도를 가끔 실행합니다. 보유주기가 길어집니다.")
+    elif sell_sensitivity >= -12:
+        info_text = st.error("매도를 거의 실행하지 않습니다. 보유주기가 매우 길어집니다.")
+        
+    # 모델 인터페이스
+    if model_radio == '빠른 분석':
+        model_radio = 'naive'
+        analysys_year = 1
+        st.success('간단한 추정모델입니다.')
+    elif model_radio == '조금 복잡한 모델 (기본 모델)':
+        model_radio = 'deep'
+        analysys_year = 3
+        st.success('조금 복잡한 모델입니다. 시간이 조금 더 걸립니다. 30초 이내')
+    elif model_radio == '심층 분석':
+        analysys_year = 10
+        model_radio = 'robust'
+        st.error('매우 복잡한 모델입니다. 시간이 오래 걸립니다. 1분 이내')
     
     # st.header("Step 2 : 목표수익률 입력")
     # target_cond = st.number_input('목표 연간 수익률을 입력하세요. (단위 : %)', value=3.25)
@@ -115,7 +143,7 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         with st.spinner('Wait for it...'):
             # 종료조건, target_cond 보다 높은 backtest_yeild가 발견되거나, iter를 다 돌때 까지
             my_bar.progress(0.45)
-            result = get_backtest_yeild_with_name(stock_name, buy_cond, sell_cond, analysys_year,result_df,model)
+            result = get_backtest_yeild_with_name(stock_name, buy_cond, sell_cond, analysys_year,result_df,model_radio)
             my_bar.progress(0.85)
             end = time.perf_counter()
             total_time =  end - start
@@ -174,23 +202,23 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         # 조건부 서식
         col1.header("투자전략 평가")
         if (result_df['투자전략 유효성'].values[0]=="적합") and(correct_rate>70): 
-            col1.header(":green[AI 신뢰도 높음]")
+            col1.subheader(":green[AI 신뢰도 높음]")
             st.info('  AI 신뢰도가 높습니다!    매매타이밍추천을 참고하세요!', icon="ℹ️")
         else:
-            col1.header(":red[AI 신뢰도 낮음]")
+            col1.subheader(":red[AI 신뢰도 낮음]")
             st.warning('  AI 신뢰도가 낮습니다!    매매타이밍추천을 무시하세요!', icon="ℹ️")
         col2.header("추천 매매포지션")
         
         if invest_efficiency=="적합":
             if yeild_prediction>buy_cond:
-                col2.header("매수") 
+                col2.subheader("매수") 
             else:
-                col2.header("관망")
+                col2.subheader("관망")
         else:
             if yeild_prediction<sell_cond:
-                col2.header(":red[매도]") 
+                col2.subheader(":red[매도]") 
             else:
-                col2.header("관망")
+                col2.subheader("관망")
                 
                 
         st.markdown("---------")
@@ -230,7 +258,6 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         col2.header(f"{result_df[f'5일 이후 예측수익률(%)'].values[0]:.2f}%")
         col3.header("","")
         
-
         con2.error("""
                    주가 예측은 현실적으로 어려운 일이며, 이론적으로는 추정할 수 없습니다.\n
                    제공하는 예측수익률은 학습된 모델을 기준으로 추정된 결과일 뿐입니다. \n
@@ -305,7 +332,7 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         market_div = market_fundamental['DIV']
         
         st.header(f"종목 펀더멘탈 정보")
-        st.header(f"벤치마크 : {market_name}")
+        st.subheader(f"벤치마크 : {market_name}")
         st.markdown("* 지표가 시장에 비해 15% 이상 좋은경우 저평가, 나쁜경우 고평가로 판단합니다.")
         
         
