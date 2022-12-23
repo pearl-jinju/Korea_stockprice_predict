@@ -23,48 +23,48 @@ TODO
 ## 실행 예시
 ### 1. 매매타이밍 추천 프로그램
 #### 1)종목명/모델 선택/손절 민감도 선택
-> ![image](https://user-images.githubusercontent.com/97038372/209274458-644ae4a6-464a-4905-8fce-d015c08acc32.png)
+![image](https://user-images.githubusercontent.com/97038372/209274458-644ae4a6-464a-4905-8fce-d015c08acc32.png)
 
 #### 2) 투자 전략평가 /  추천매매포지션
 > - AI가 추정한 투자전략이 유효한지 확인합니다.
 > - 현재 위 종목에 대한 매매포지션을 추천합니다.
-> ![image](https://user-images.githubusercontent.com/97038372/209274609-f1552060-8f93-4783-a99f-5d379c449c5c.png)
+![image](https://user-images.githubusercontent.com/97038372/209274609-f1552060-8f93-4783-a99f-5d379c449c5c.png)
 
 #### 3) 연환산수익률 확인
-> ![image](https://user-images.githubusercontent.com/97038372/209274698-784a0517-c734-429e-85b7-c553124b350d.png)
+![image](https://user-images.githubusercontent.com/97038372/209274698-784a0517-c734-429e-85b7-c553124b350d.png)
 
 #### 4) 내일의 수익률 예측
 > - 학습된 모델이 추정한 내일의 수익률입니다. regression 모델이 사용된 추정입니다.
-> ![image](https://user-images.githubusercontent.com/97038372/209274722-7ed912da-8801-4d30-aa09-64ad7ac71f8f.png)
+![image](https://user-images.githubusercontent.com/97038372/209274722-7ed912da-8801-4d30-aa09-64ad7ac71f8f.png)
 
 #### 5) 추정 오차확인
 > - 학습된 모델이 추정한 수익률과 실제 수익률간 오차를 차트로 표현합니다.
-> ![image](https://user-images.githubusercontent.com/97038372/209274806-7225f940-7c0f-463d-a45d-84fe689a8bda.png)
+![image](https://user-images.githubusercontent.com/97038372/209274806-7225f940-7c0f-463d-a45d-84fe689a8bda.png)
 
 #### 6) 종목 관련 정보
 > - 당일 주가의 변동을 나타냅니다.
-> ![image](https://user-images.githubusercontent.com/97038372/209274873-26d35acf-d817-430a-b89b-b79ed7de4d24.png)
+![image](https://user-images.githubusercontent.com/97038372/209274873-26d35acf-d817-430a-b89b-b79ed7de4d24.png)
 
 #### 7) 종목 펀더멘탈 정보
 > - 당일 기준 종목의 펀더멘탈을 벤치마크(해당 종목이 편입된 벤치마크 시장 참고)와 비교하여 상대적 고평가/보통/저평가를 구분합니다.
-> ![image](https://user-images.githubusercontent.com/97038372/209274910-cf9ee73e-5310-4b28-8aac-bebed312138c.png)
+![image](https://user-images.githubusercontent.com/97038372/209274910-cf9ee73e-5310-4b28-8aac-bebed312138c.png)
 
 
 ### 2. 종목관련 테마 조회
 #### 1) 관련테마
 > - 종목과 관련된 테마를 출력합니다.
-> ![image](https://user-images.githubusercontent.com/97038372/209275147-a33f3151-42a8-4002-81bc-a1cc72a2ddbe.png)
+![image](https://user-images.githubusercontent.com/97038372/209275147-a33f3151-42a8-4002-81bc-a1cc72a2ddbe.png)
 > - 아래처럼 일부의 테마만 선택할 수 있습니다.
-> ![image](https://user-images.githubusercontent.com/97038372/209275264-69787bd7-efdd-4830-a57b-c7e8bbbce99a.png)
+![image](https://user-images.githubusercontent.com/97038372/209275264-69787bd7-efdd-4830-a57b-c7e8bbbce99a.png)
  
 #### 2) 테마 관련 다른 종목/ 테마 평균 수익률/ 테마사유
 > - 테마 내에 속한 다른 종목들을 확인해 볼 수 있습니다. 테마의 평균 수익률 및 테마로 선정된 사유까지 확인할 수 있습니다.
->![image](https://user-images.githubusercontent.com/97038372/209275465-e5d9d696-5cc2-4bed-9a57-c40ecc91b148.png)
+![image](https://user-images.githubusercontent.com/97038372/209275465-e5d9d696-5cc2-4bed-9a57-c40ecc91b148.png)
 
 
 ### 3. 상승률/하락률 상위종목
 > -  상승률/하락률 TOP10 종목을 출력합니다
-> ![image](https://user-images.githubusercontent.com/97038372/209275616-d2d669a2-7f0c-4ee0-89d0-e815094020a3.png)
+![image](https://user-images.githubusercontent.com/97038372/209275616-d2d669a2-7f0c-4ee0-89d0-e815094020a3.png)
 
 
 ## TODO_LIST
