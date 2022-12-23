@@ -21,15 +21,15 @@ def ratio_judge(x, critical_point, diretion="F"):
     judge_high = ""
     judge_low = ""
     if diretion == "F":
-        judge_high = "저평가"
-        judge_low = "고평가"
-    elif diretion == "R":
         judge_high = "고평가"
         judge_low = "저평가"
+    elif diretion == "R":
+        judge_high = "저평가"
+        judge_low = "고평가"
         
     if x>= critical_point:
         return judge_high
-    elif -x<=critical_point:
+    elif x<=-critical_point:
         return judge_low
     else:
         return "보통"
@@ -72,7 +72,7 @@ def get_high_low_info():
 
 
 # 종목명을 넣으면 vector로 변환하여 day동안의 모델을 적용한 수익률과 실제수익률을 비교하는 함수를 출력
-def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df):
+def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df,model):
     result_df = price_info_df
     # get_chart(name,price_info_df)
     
@@ -102,9 +102,21 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
     buy_list = []
     # 매도 가격 리스트
     sell_list = []
+    # 예측수익률 리스트
+    yeild_prediction_list = []
+    # 보유일자 리스트
+    holding_day_ls = []
+    # 보유일자 초기화
+    holding_day = 0
     # print("Back_test....")
-        
-    final_lgb_model = joblib.load("..\\model\\lgbm_model_0.20_0.20_iter_50001_day_5.pkl") 
+    
+    if model =="naive":
+        final_lgb_model = joblib.load("..\\model\\lgbm_model_0.28_0.27_iter_2749_day_5.pkl")
+    elif model=="deep":
+        final_lgb_model = joblib.load("..\\model\\lgbm_model_0.20_0.20_iter_50001_day_5.pkl")
+    elif model=="robust":    
+        final_lgb_model = joblib.load("..\\model\\lgbm_model_0.43_0.43_iter_2046_day_5.pkl")
+     
 
     for idx in tqdm(range(len(result_df)-(params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY)+1)):
         row_vector = result_df.iloc[idx:idx+params.ANALYSIS_DAY+params.PERIOD_YEILD_DAY]
@@ -117,9 +129,12 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
         vector_df = vector_df.values
         vector_df = np.append(vector_df, period_yeild)
         vector_df = pd.DataFrame([vector_df])  
+        # print(vector_df)
 
         yeild_prediction = final_lgb_model.predict(vector_df.iloc[:,:params.ANALYSIS_DAY])[0] 
+        yeild_prediction_list.append(yeild_prediction)
         # print(f"예상 수익률: {yeild_prediction}")
+        
 
 
         # 매매 트레이딩 시뮬레이션
@@ -130,33 +145,46 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
                 # 보유 상태로 변경
                 
                 trading_position = "Y"
+                holding_day = 1
                 trading_amount = trading_price / buy_price
-                print(f"{trading_amount:.1f}주 주당{buy_price:.1f}원 매수 , 평가금액: {trading_price:.1f}원")
+                # print(f"{trading_amount:.1f}주 주당{buy_price:.1f}원 매수 , 평가금액: {trading_price:.1f}원")
                 buy_list.append(buy_price)
                 trading_price = 0
                 buy_cnt+=1
                 
             # 만약 매도 허들 이하라면 무시,
             elif yeild_prediction <=sell_cond:
+                if holding_day >=1:
+                    holding_day += 1
                 continue
             # 만약 중립구간이라면 무시
             else:
+                if holding_day >=1:
+                    holding_day += 1
                 continue
         elif trading_position=="Y":
             # 만약 매수 허들을 넘었다면 무시,
             if yeild_prediction >= buy_cond:
+                if holding_day >=1:
+                    holding_day += 1
                 continue
             # 만약 매도 허들 이하라면 매도,
             elif yeild_prediction <= sell_cond:
+                # 보유일자 저장
+                holding_day_ls.append(holding_day)
+                # 보유일자 초기화
+                holding_day = 0
                 trading_position = "N"
                 trading_price = trading_amount*sell_price
-                print(f"{trading_amount:.1f}주 주당{sell_price:.1f}원 매도 , 평가금액: {trading_price:.1f}원")
+                # print(f"{trading_amount:.1f}주 주당{sell_price:.1f}원 매도 , 평가금액: {trading_price:.1f}원")
                 sell_list.append(buy_price)
                 trading_amount = 0
                 sell_cnt+=1
                 
             # 만약 중립구간이라면 무시
             else:
+                if holding_day >=1:
+                    holding_day += 1
                 continue
 
         # 현재 투자전략 수익률
@@ -166,7 +194,7 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
         # 현재 보유중이지 않다면
         elif trading_position=="N":
             current_yeild = trading_price/start_trading_price - 1
-        print(f"현재 수익률은 {current_yeild*100:.2f}%입니다.")
+        # print(f"현재 수익률은 {current_yeild*100:.2f}%입니다.")
     
     # Backtest_yeild 연평균으로 환산
     backtest_yeild = ((1+current_yeild)**(1/(year))-1)*100
@@ -174,9 +202,9 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
     # Backtest_yeild
     backtest_yeild = round(backtest_yeild,2)
 
-    print(f"{name}_Back_test 연환산수익률 {backtest_yeild:.2f}%")
-    print(f"{params.PERIOD_YEILD_DAY}일 후 예상 보유수익률 {yeild_prediction:.2f}%")
-    print(f"매수횟수 : {buy_cnt}", f"매도횟수 : {sell_cnt}", f"매매횟수 : {buy_cnt+sell_cnt}")
+    # print(f"{name}_Back_test 연환산수익률 {backtest_yeild:.2f}%")
+    # print(f"{params.PERIOD_YEILD_DAY}일 후 예상 보유수익률 {yeild_prediction:.2f}%")
+    # print(f"매수횟수 : {buy_cnt}", f"매도횟수 : {sell_cnt}", f"매매횟수 : {buy_cnt+sell_cnt}")
     
     # 투자전략 효율성 체크 초기화
     invest_efficiency = 0
@@ -198,4 +226,4 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df)
         invest_efficiency = 0
         # print("투자하기에 현재 투자전략이 부적절합니다.")
     
-    return [backtest_yeild, yeild_prediction, invest_efficiency, stock_price_info_2days, stock_fundamental_info, buy_cond, sell_cond, buy_list, sell_list]
+    return [backtest_yeild, yeild_prediction, invest_efficiency, stock_price_info_2days, stock_fundamental_info, buy_cond, sell_cond, buy_list, sell_list, result_df.values,yeild_prediction_list,holding_day_ls]

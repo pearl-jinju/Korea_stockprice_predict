@@ -1,9 +1,8 @@
 import streamlit as st
 import pandas as pd
 from predict import get_backtest_yeild_with_name, get_high_low_info, ratio_judge
-from loader import date_from_now, get_stock_basic_info, get_stock_price_info, get_index_fundamental_info, get_included_thema_stocks_in_thema
-import random
-from itertools import combinations
+from loader import  get_stock_basic_info, get_stock_price_info, get_index_fundamental_info, get_included_thema_stocks_in_thema
+from sklearn.metrics import mean_absolute_error
 import params
 import numpy as np
 import time
@@ -19,21 +18,61 @@ target_cond = 3.25
 # 시뮬레이션 기간
 analysys_year = 2
 
+
 # ========================================
 
 
 
 st.sidebar.header('MENU')
-side_menu_name = st.sidebar.selectbox('사용할 기능을 선택하세요.',['주식 수익률 예측','종목관련 테마 조회','상승률/하락률 상위종목'])
+side_menu_name = st.sidebar.selectbox('사용할 기능을 선택하세요.',['매매타이밍 추천 프로그램','종목관련 테마 조회','상승률/하락률 상위종목'])
 
 
 st.title('지금 투자해도 될까?')
 st.markdown('----')
 
-if side_menu_name=='주식 수익률 예측':
-    st.header("종목명만 입력하세요!")
+if side_menu_name=='매매타이밍 추천 프로그램':
+    st.header("종목명을 입력하세요!")
     stock_name = st.text_input('  ', value="카카오")
     st.markdown('----')
+    
+    # 라디오 버튼 추가(모델 선택)
+    st.header("모델 선택")
+    model = st.radio(
+    "모델을 선택하세요",
+    ('조금 복잡한 모델','빠른 분석' ,'심층 분석'),)
+
+    if model == '빠른 분석':
+        model = 'naive'
+        analysys_year = 1
+        st.write(f'간단한 추정모델입니다.')
+    elif model == '조금 복잡한 모델':
+        model = 'deep'
+        analysys_year = 3
+        st.write(f'조금 복잡한 모델입니다. 시간이 조금 더 걸립니다. 30초 이내')
+    elif model == '심층 분석':
+        analysys_year = 10
+        model = 'robust'
+        st.write(f'매우 복잡한 모델입니다. 시간이 오래 걸립니다. 1분 이내')
+    
+    
+    st.markdown("----")
+    st.header("손절 타이밍 선택")
+    # 슬라이더 추가(손절 민감도)
+    sell_sensitivity = st.slider('AI가 손절할 타이밍을 선택해주세요.', -12, -1, -3)
+    st.info(f"AI 추정값이 {sell_sensitivity}% 이상 예상되는 경우 손절하도록 설정합니다. ")
+    sell_cond = sell_sensitivity
+
+    if sell_sensitivity >= 0:
+        info_text = st.error('손절을 자주 실행합니다. 보유주기가 짧아집니다.')
+    elif sell_sensitivity >= -4:
+        info_text = st.success("일반적인 손절을 실행합니다.")
+    elif sell_sensitivity >= -8:
+        info_text = st.error("손절을 가끔 실행합니다. 보유주기가 길어집니다.")
+    elif sell_sensitivity >= -12:
+        info_text = st.error("손절을 거의 실행하지 않습니다. 보유주기가 매우 길어집니다.")
+        
+
+    
     # st.header("Step 2 : 목표수익률 입력")
     # target_cond = st.number_input('목표 연간 수익률을 입력하세요. (단위 : %)', value=3.25)
     # st.markdown(f"* 현재 기준금리, 5년물 국채 , 또는 다른 지표들이 기준이 될수 있습니다.")
@@ -46,8 +85,12 @@ if side_menu_name=='주식 수익률 예측':
     
 
     # 버튼 설계
-    if button2.button("시뮬레이션"):
-        
+    
+    if button2.button("매매 타이밍 찾기!"):
+        st.markdown('----')
+        progress = 0
+        my_bar = st.progress(0.0+progress)
+        start = time.perf_counter()
         success_msg = st.success('분석을 시작합니다. 잠시만 기다려주세요...')
 
         # 컨테이너 생성
@@ -56,18 +99,24 @@ if side_menu_name=='주식 수익률 예측':
         
         # 종목 기본정보 불러오기
         all_stock_info_df = get_stock_basic_info(0, market="ALL", detail="BASIC")
+        # 로딩바 진행
+        my_bar.progress(0.15)
+        
         # 티커 추출
         cond = all_stock_info_df['종목명'] == stock_name   
         ticker = all_stock_info_df.loc[cond,'티커'].values[0]
         # 종목 가격 관련 정보 불러오기
         result_df = get_stock_price_info(ticker,"ALL","ALL", params.YEAR_TO_DAY*analysys_year)     
         success_msg.empty()
-        success_msg = st.success('금방 끝납니다!  (8초 이내)')
+        # 로딩바 진행
+        my_bar.progress(0.4)
+        success_msg = st.success('잠시만 기다려주세요')
         
         with st.spinner('Wait for it...'):
             # 종료조건, target_cond 보다 높은 backtest_yeild가 발견되거나, iter를 다 돌때 까지
-            start = time.perf_counter()
-            result = get_backtest_yeild_with_name(stock_name, buy_cond, sell_cond, analysys_year,result_df)
+            my_bar.progress(0.45)
+            result = get_backtest_yeild_with_name(stock_name, buy_cond, sell_cond, analysys_year,result_df,model)
+            my_bar.progress(0.85)
             end = time.perf_counter()
             total_time =  end - start
             backtest_yeild =  result[0]
@@ -79,69 +128,148 @@ if side_menu_name=='주식 수익률 예측':
             buy_cond = result[5]
             buy_list = result[7]
             sell_list = result[8]
+            price_pattern = result[9]
+            pridict_pattern = result[10]
+            holding_day_ls = result[11]
+            my_bar.progress(1)
             
+           
             success_msg.empty()
-            st.success(f'분석 완료! \t Completed : {total_time:.1f}초 ')
+            st.success(f' Completed : {total_time:.1f}sec ')
+            my_bar.empty()
             
-            
-            # 매수 매도 가격과 수익률 출력
-            trading_history = pd.DataFrame([buy_list,sell_list]).transpose()
-            trading_history.columns = ['매수가격','매도가격']
-            trading_history.dropna(inplace=True, axis=0)
-            trading_history['수익률'] = round(trading_history['매도가격']/trading_history['매수가격']-1,3)*100 
-            trading_history['수익률'] = trading_history['수익률'].apply(lambda x : str(x)[:6]+"%")
-         
-            if invest_efficiency==1:
-                invest_efficiency = "적합"
+        # 매수 매도 가격과 수익률 출력
+        trading_history = pd.DataFrame([buy_list,sell_list,holding_day_ls]).transpose()
+        trading_history.columns = ['매수가격','매도가격','보유일자(일)']
+        trading_history.dropna(inplace=True, axis=0)
+        trading_history['수익률'] = round(trading_history['매도가격']/trading_history['매수가격']-1,5)*100 
+        # 이익횟수와 손실횟수
+        profit_cnt = len(trading_history[trading_history['수익률']>=0])
+        loss_cnt = len(trading_history[trading_history['수익률']<0])
+        # 적중률 0오류 처리
+        if profit_cnt==0:
+            correct_rate =0
+        else:
+            correct_rate = round((profit_cnt/(profit_cnt+loss_cnt))*100,2)
+        # 소수점 문제로 인해 str 형태로 임시 변경
+        trading_history['매수가격'] = trading_history['매수가격'].apply(lambda x: round(int(x),0))
+        trading_history['수익률'] = trading_history['수익률'].apply(lambda x: round(float(x),2))
+        trading_history['수익률'] = trading_history['수익률'].apply(lambda x: str(x)[:-1]+"%")
+        
+        if invest_efficiency==1:
+            invest_efficiency = "적합"
 
-            elif invest_efficiency==0:
-                invest_efficiency = "부적합"
+        elif invest_efficiency==0:
+            invest_efficiency = "부적합"
 
 
-            result_ls = [[backtest_yeild, yeild_prediction, invest_efficiency]]    
-            result_df = pd.DataFrame(result_ls)
-            result_df.columns =[ f"{analysys_year}년 Back_test 연환산수익률(%)" , "5일 이후 예측수익률(%)", "투자전략 유효성"]
-            
+        result_ls = [[backtest_yeild, yeild_prediction, invest_efficiency]]    
+        result_df = pd.DataFrame(result_ls)
+        result_df.columns =[ f"{analysys_year}년 Back_test 연환산수익률(%)" , "5일 이후 예측수익률(%)", "투자전략 유효성"]
+        
         st.markdown("---------")
         yeild_prediction = result_df['5일 이후 예측수익률(%)'].values[0]
+        
         col1,col2 = st.columns(2)
         # 조건부 서식
         col1.header("투자전략 평가")
-        if result_df['투자전략 유효성'].values[0]=="적합": 
+        if (result_df['투자전략 유효성'].values[0]=="적합") and(correct_rate>70): 
             col1.header(":green[AI 신뢰도 높음]")
+            st.info('  AI 신뢰도가 높습니다!    매매타이밍추천을 참고하세요!', icon="ℹ️")
         else:
             col1.header(":red[AI 신뢰도 낮음]")
+            st.warning('  AI 신뢰도가 낮습니다!    매매타이밍추천을 무시하세요!', icon="ℹ️")
         col2.header("추천 매매포지션")
         
         if invest_efficiency=="적합":
             if yeild_prediction>buy_cond:
-                col2.header(":green[매수]") 
+                col2.header("매수") 
             else:
-                col2.header(":yellow[관망]")
+                col2.header("관망")
         else:
             if yeild_prediction<sell_cond:
                 col2.header(":red[매도]") 
             else:
-                col2.header(":yellow[관망]")
+                col2.header("관망")
                 
                 
         st.markdown("---------")
+
         st.header(f"AI 매매일지")
-        st.text(f" {analysys_year}년 중 매매횟수: {len(trading_history)*2}회**")
+        col1, col2 = st.columns(2)
+        col1.info(f" {analysys_year}년 중 손익실현: {len(trading_history)}회")
+        col1.success(f" {analysys_year}년 중 이익 횟수: {profit_cnt}회")
+        col2.info(f" 평균 보유일 수: {np.mean(holding_day_ls):.1f}일")
+        col2.error(f" {analysys_year}년 중 손실 횟수: {loss_cnt}회")
+        
+        st.info(f"적중률 : {correct_rate:.2f}%")
+       
+        
         st.dataframe(trading_history,use_container_width=True)
         
         
+        st.markdown("---------")
+        st.header(f" {analysys_year}년 Back_test 연환산수익률(%)")
         col1,col2,col3 = st.columns(3)
-        col1.metric("","")
-        col2.metric(f"{analysys_year}년 Back_test 연환산수익률(%)",f"{result_df[f'{analysys_year}년 Back_test 연환산수익률(%)'].values[0]:.2f}%")
-        col3.metric("","")
+        
+        col1.header("","")
+        col2.header(f"{result_df[f'{analysys_year}년 Back_test 연환산수익률(%)'].values[0]:.2f}%")
+        col3.header("","")
         
         st.text("")
         st.markdown(f"* Back_test :green[연환산수익률이 {target_cond}% 이상]일 때 효과적인 매매전략입니다.  \n  (2022.11.24 기준금리)")
         st.markdown("* :red[Back_test 연환산수익률(%)은 현재 모델을 기준으로 계산된 시뮬레이션 결과로로 실제 수익률과 다릅니다.]")     
-      
-        # 기타 정보제공
+        
+        
+        st.markdown("---------")
+        con2 = st.container()
+        con2.header(f" 내일 수익률 예측(%)")
+        col1,col2,col3 = con2.columns(3)
+        
+        col1.header("","")
+        col2.header(f"{result_df[f'5일 이후 예측수익률(%)'].values[0]:.2f}%")
+        col3.header("","")
+        
 
+        con2.error("""
+                   주가 예측은 현실적으로 어려운 일이며, 이론적으로는 추정할 수 없습니다.\n
+                   제공하는 예측수익률은 학습된 모델을 기준으로 추정된 결과일 뿐입니다. \n
+                   예측값은 오차가 항상 있습니다. 이점 유의하여 주시고, 투자의 근거로 사용하지 않길 바랍니다.\n
+                   모든 투자에 대한 책임은 투자자 본인에게 있습니다.
+                   """)
+        st.markdown("---------")
+        
+        
+        
+        real_chart_data = pd.DataFrame(
+                np.array(price_pattern[-5:]),
+                columns=['수익률']
+                )
+        predict_chart_data=pd.DataFrame(
+                np.array(pridict_pattern[-6:-1]),
+                columns=['예측수익률']
+                )
+              
+        chart_data = pd.concat([real_chart_data,predict_chart_data],axis=1)
+        mae_5 = mean_absolute_error(price_pattern[-5:],pridict_pattern[-6:-1])
+        st.header(f"최근 5일 등락률 패턴  :green[오차 ± {mae_5:.2f}%]")
+        st.line_chart(chart_data,use_container_width=True)  
+        
+        
+        real_chart_data = pd.DataFrame(
+                np.array(price_pattern[-100:]),
+                columns=['수익률']
+                )
+        predict_chart_data=pd.DataFrame(
+                np.array(pridict_pattern[-101:-1]),
+                columns=['예측수익률']
+                )
+        chart_data = pd.concat([real_chart_data,predict_chart_data],axis=1)
+        mae_100 = mean_absolute_error(price_pattern[-100:],pridict_pattern[-101:-1])
+        st.header(f"최근 100일 등락률 패턴  :green[오차 ± {mae_100:.2f}%]")
+        st.line_chart(chart_data,use_container_width=True)     
+        
+        # 기타 정보제공
         st.markdown("---------")
         st.header("종목 관련 정보")
         o_price_yesterday = stock_price_info['시가'].iloc[0]
@@ -164,8 +292,7 @@ if side_menu_name=='주식 수익률 예측':
         
         st.markdown("---------")
 
-        st.header("종목 펀더멘탈 정보")
-        st.markdown("* 지표가 시장에 비해 15% 이상 좋은경우 저평가, 나쁜경우 고평가로 판단합니다.")
+
 
         market_fundamental = get_index_fundamental_info(ticker)
         per = stock_fundamental_info.iloc[:,0:1].values[0][0]
@@ -177,6 +304,10 @@ if side_menu_name=='주식 수익률 예측':
         market_pbr = market_fundamental['PBR']
         market_div = market_fundamental['DIV']
         
+        st.header(f"종목 펀더멘탈 정보")
+        st.header(f"벤치마크 : {market_name}")
+        st.markdown("* 지표가 시장에 비해 15% 이상 좋은경우 저평가, 나쁜경우 고평가로 판단합니다.")
+        
         
         # 시장대비 x% 이상인 경우 저평가
         # 시장대비 X% 이하인 경우 저평가
@@ -184,32 +315,96 @@ if side_menu_name=='주식 수익률 예측':
         
         
         # per은 낮을수록 저평가 (시장-종목)
-        market_stock_diff_per = market_per-per 
+        market_stock_diff_per = per - market_per 
         market_stock_diff_rate_per = market_stock_diff_per/market_per
         per_judge = ratio_judge(market_stock_diff_rate_per,0.15)
         
         # pbr은 낮을수록 저평가 (시장-종목)
-        market_stock_diff_pbr = market_pbr-pbr
+        market_stock_diff_pbr = pbr - market_pbr
         market_stock_diff_rate_pbr = market_stock_diff_pbr/market_pbr
         pbr_judge = ratio_judge(market_stock_diff_rate_pbr,0.15)
         
         # div는 높을수록 좋음
-        market_stock_diff_div = market_div-div
+        market_stock_diff_div = div - market_div
         market_stock_diff_rate_div = market_stock_diff_div/market_div
         div_judge = ratio_judge(market_stock_diff_rate_div, 0.15,"R")
 
-        per_result = f"{market_stock_diff_per:.2f} ({market_name} {per_judge})"
-        pbr_result = f"{market_stock_diff_pbr:.2f} ({market_name} {pbr_judge})"
-        div_result = f"{market_stock_diff_div:.2f} ({market_name} {div_judge})"
+        per_result = f"펀더멘탈 평가 : {per_judge}"
+        pbr_result = f"펀더멘탈 평가 : {pbr_judge}"
+        div_result = f"펀더멘탈 평가 : {div_judge}"
         
-    
-        col1, col2 = st.columns(2)
-        col1.metric("PER(주가/순이익)", f"{per:.2f}", per_result)
-        col2.metric("PBR(주가/장부가치)", f"{pbr:.2f}", pbr_result)
+        
+            
         
         col1, col2 = st.columns(2)
-        col1.metric("DIV(배당/주가)", f"{div:.2f}", div_result)
-        col2.metric("", "", "")
+        if per_judge =="고평가":
+            col1.header("PER")
+            col1.info(f"종목 PER {per:.2f}   /   시장 PER {market_per:.2f}  /   {market_stock_diff_rate_per*100:.2f}%")
+            col1.error(per_result)
+        elif per_judge=="보통":
+            col1.header("PER")
+            col1.info(f"종목 PER {per:.2f}   /   시장 PER {market_per:.2f}  /   {market_stock_diff_rate_per*100:.2f}%")
+            col1.info(per_result)
+        elif per_judge=="저평가":
+            col1.header("PER")
+            col1.info(f"종목 PER {per:.2f}   /   시장 PER {market_per:.2f}  /   {market_stock_diff_rate_per*100:.2f}%")
+            col1.success(per_result)
+            
+        if pbr_judge =="고평가":
+            col2.header("PBR")
+            col2.info(f"종목 PBR {pbr:.2f}   /   시장 PBR {market_pbr:.2f}  /   {market_stock_diff_rate_pbr*100:.2f}%")
+            col2.error(pbr_result)
+        elif pbr_judge=="보통":
+            col2.header("PBR")
+            col2.info(f"종목 PBR {pbr:.2f}   /   시장 PBR {market_pbr:.2f}  /   {market_stock_diff_rate_pbr*100:.2f}%")
+            col2.info(pbr_result)
+        elif pbr_judge=="저평가":
+            col2.header("PBR")
+            col2.info(f"종목 PBR {pbr:.2f}   /   시장 PBR {market_pbr:.2f}  /   {market_stock_diff_rate_pbr*100:.2f}%")
+            col2.success(pbr_result)
+
+        col1, col2 = st.columns(2)
+        
+        if div_judge =="고평가":
+            col1.header("DIV")
+            col1.info(f"종목 DIV {div:.2f}   /   시장 DIV {market_div:.2f}  /   {market_stock_diff_rate_div*100:.2f}%")
+            col1.error(div_result)
+        elif div_judge=="보통":
+            col1.header("DIV")
+            col1.info(f"종목 DIV {div:.2f}   /   시장 DIV {market_div:.2f}  /   {market_stock_diff_rate_div*100:.2f}%")
+            col1.info(div_result)
+        elif div_judge=="저평가":
+            col1.header("DIV")
+            col1.info(f"종목 DIV {div:.2f}   /   시장 DIV {market_div:.2f}  /   {market_stock_diff_rate_div*100:.2f}%")
+            col1.success(div_result)
+        
+        # 펀더멘탈 총평 작성    
+        result_ls = [per_result, pbr_result, div_result]
+        high = [i for i in result_ls if "고평가" in i]
+        normal = [i for i in result_ls if "보통" in i]
+        low = [i for i in result_ls if "저평가" in i]
+        result_fundamental = len(high)  + len(normal)*2  +len(low)*3
+        
+        if result_fundamental>=7:
+            result_fundamental = "저평가"
+        elif result_fundamental>= 5:
+            result_fundamental = "보통"
+        else:
+            result_fundamental = "고평가"
+            
+        if result_fundamental =="고평가":
+            col2.header("총평")
+            col2.header(f":red[{result_fundamental}]")
+        elif result_fundamental=="보통":
+            col2.header("총평")
+            col2.header(f"{result_fundamental}")
+
+        elif result_fundamental=="저평가":
+            col2.header("총평")
+            col2.header(f":green[{result_fundamental}]")
+
+        
+            
             
         st.markdown("---------")
 
@@ -266,8 +461,8 @@ elif side_menu_name=="종목관련 테마 조회":
         result_df['종가'] = result_df['종가'].apply(lambda x: x.split(".")[0])
         result_df['등락률'] = result_df['등락률'].apply(lambda x: x+"%")    
         
-        st.subheader(f"{thema_name}테마 /  평균 등락률 : {thema_average_rate:.2f}%")
-        st.dataframe(result_df)
+        st.subheader(f"{thema_name}테마 / 평균 등락률 : {thema_average_rate:.2f}%")
+        st.dataframe(result_df,use_container_width=True)
         
 
 elif side_menu_name=='코스피/코스닥 달력':
