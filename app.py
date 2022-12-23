@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from predict import get_backtest_yeild_with_name, get_high_low_info, ratio_judge
-import loader
 import params
 from loader import get_stock_basic_info, get_stock_price_info, get_index_fundamental_info, get_included_thema_stocks_in_thema
 from sklearn.metrics import mean_absolute_error

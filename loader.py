@@ -111,7 +111,7 @@ def get_index_fundamental_info(stock_ticker):
                 temp_df = pd.DataFrame([[market_name,index_fundamental_rate,index_fundamental_per,index_fundamental_pbr,index_fundamental_div,stocks_in_market]])
                 result_df = pd.concat([result_df,temp_df])
         result_df.columns = ['시장명','등락률','PER','PBR', "DIV","편입종목"]
-        with open(f'./data/market_fundamental_{date_from_now()}.pkl', 'wb') as f:
+        with open(f'.\\data\\raw_data\\market_fundamental_{date_from_now()}.pkl', 'wb') as f:
             pickle.dump(result_df, f)
             
         # 리스트를 str로
@@ -142,7 +142,7 @@ def get_index_fundamental_info(stock_ticker):
     
     else:
         # load
-        with open(f'./data/market_fundamental_{date_from_now()}.pkl', 'rb') as f:
+        with open(f'.\\data\\raw_data\\market_fundamental_{date_from_now()}.pkl', 'rb') as f:
             result_df = pickle.load(f)
         # 리스트를 str로
         result_df['편입종목'] = result_df['편입종목'].str.join("_")
@@ -260,6 +260,7 @@ def get_included_thema_stocks_in_thema(name:str):
 if __name__=='__main__':   
     # 테마 정보 받아오기
     get_thema()
+    get_index_fundamental_info('005930')
     
     for market in ["KOSPI","KOSDAQ"]:    
         result_df = pd.DataFrame()
@@ -275,13 +276,13 @@ if __name__=='__main__':
             pickle.dump(result_df, f)
 
     # 임시저장 파일 load
-    with open(r'.\data\stock_price_data_all_period_KOSPI_2.pkl', 'rb') as f:
+    with open(r'.\\data\\raw_data\\stock_price_data_all_period_KOSPI_2.pkl', 'rb') as f:
         kospi_df = pickle.load(f)
-    with open(r'.\data\stock_price_data_all_period_KOSDAQ_2.pkl', 'rb') as f:
+    with open(r'.\\data\\raw_data\\stock_price_data_all_period_KOSDAQ_2.pkl', 'rb') as f:
         kosdaq_df = pickle.load(f)
         
     all_market_df = pd.concat([kospi_df,kosdaq_df])
     # 최종 파일 생성
-    with open(f'.\data\stock_price_data_all_period_ALL_2.pkl', 'wb') as f:
+    with open(f'.\\data\\raw_data\\stock_price_data_all_period_ALL_2.pkl', 'wb') as f:
         pickle.dump(all_market_df, f)
         
