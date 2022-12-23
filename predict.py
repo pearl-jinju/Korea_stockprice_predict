@@ -112,13 +112,13 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df,
     # print("Back_test....")
 
     if model =="naive":
-        model_path = ".\\model\\lgbm_model_0.60_0.60_iter_2169_day_5.pkl"
+        model_path = "lgbm_model_0.60_0.60_iter_2169_day_5.pkl"
         
     elif model=="deep":
-        model_path  = ".\\model\\lgbm_model_0.28_0.27_iter_2749_day_5.pkl"
+        model_path  = "lgbm_model_0.28_0.27_iter_2749_day_5.pkl"
         
     elif model=="robust":    
-        model_path = ".\\model\\lgbm_model_0.30_0.30_iter_2651_day_5.pkl"
+        model_path = "lgbm_model_0.30_0.30_iter_2651_day_5.pkl"
         
     with open (model_path,'rb') as f:
         final_lgb_model = pickle.load(f)
