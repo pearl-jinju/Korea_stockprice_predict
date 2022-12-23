@@ -1,7 +1,0 @@
-0
-"<bound method LGBMModel.get_params of LGBMRegressor(learning_rate=1.3972163064923943e-09, max_depth=39, metric='mae',
-              min_child_samples=43, n_estimators=744, objective='regression',
-              subsample=0.31514252640403756, verbose=-1)>"
-"<bound method LGBMModel.get_params of LGBMRegressor(learning_rate=2.434669713604816e-08, max_depth=13, metric='mae',
-              min_child_samples=25, n_estimators=833, objective='regression',
-              subsample=0.12255747764687687, verbose=-1)>"
