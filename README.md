@@ -54,8 +54,8 @@ TODO
 #### 1) 관련테마
 > - 종목과 관련된 테마를 출력합니다.
 > ![image](https://user-images.githubusercontent.com/97038372/209275147-a33f3151-42a8-4002-81bc-a1cc72a2ddbe.png)
-> >  - 아래처럼 일부의 테마만 선택할 수 있습니다.
-> >   ![image](https://user-images.githubusercontent.com/97038372/209275264-69787bd7-efdd-4830-a57b-c7e8bbbce99a.png)
+> - 아래처럼 일부의 테마만 선택할 수 있습니다.
+> ![image](https://user-images.githubusercontent.com/97038372/209275264-69787bd7-efdd-4830-a57b-c7e8bbbce99a.png)
  
 #### 2) 테마 관련 다른 종목/ 테마 평균 수익률/ 테마사유
 > - 테마 내에 속한 다른 종목들을 확인해 볼 수 있습니다. 테마의 평균 수익률 및 테마로 선정된 사유까지 확인할 수 있습니다.
