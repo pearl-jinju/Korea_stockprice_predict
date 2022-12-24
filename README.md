@@ -1,3 +1,7 @@
+# 웹페이지 
+https://pearl-in-stocks.streamlit.app/
+
+
 # Korea_stockprice_predict
 ## 프로젝트 목표
   > 미래의 주가는 과거의 주가의 행태(behavior)에 의해 결정된다는 기술적분석(technical analysis)은 주식 시장을 비롯한 금융 시장을 분석하고 예측하는 중요한 기법 가운데 하나입니다.
