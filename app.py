@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from predict import get_backtest_yeild_with_name, get_high_low_info, ratio_judge
 import params
-from loader import get_stock_basic_info, get_stock_price_info, get_index_fundamental_info, get_included_thema_stocks_in_thema
+from loader import get_stock_basic_info, get_stock_price_info, get_included_thema_stocks_in_thema ,get_stocks_fundamental_info
 from sklearn.metrics import mean_absolute_error
 import numpy as np
 import time
@@ -64,27 +64,28 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         st.info(f"AI 추정값이 {sell_sensitivity}% 이상 예상되는 경우 매도하도록 설정합니다. -3% 추천")
         sell_cond = sell_sensitivity
 
-
+    col1, col2 = st.columns(2)
+    
     #매수 민감도 인터페이스
     if buy_sensitivity <= 3:
-        info_text = st.error('매수를 자주 실행합니다. 현금 보유일수가 짧아집니다.')
+        info_text = col1.error('매수를 자주 실행합니다. 현금 보유일수가 짧아집니다.')
     elif buy_sensitivity <= 6:
-        info_text = st.success("일반적인 매수를 실행합니다.")
+        info_text = col1.success("일반적인 매수를 실행합니다.")
     elif buy_sensitivity <= 9:
-        info_text = st.warning("매수를 가끔 실행합니다. 현금 보유일수가 길어집니다.")
+        info_text = col1.warning("매수를 가끔 실행합니다. 현금 보유일수가 길어집니다.")
     elif buy_sensitivity <= 12:
-        info_text = st.error("매수를 거의 실행하지 않습니다. 현금 보유일수가 매우 길어집니다.")
+        info_text = col1.error("매수를 거의 실행하지 않습니다. 현금 보유일수가 매우 길어집니다.")
 
         
     #매도 민감도 인터페이스
     if sell_sensitivity >= 0:
-        info_text = st.error('매도를 자주 실행합니다. 보유주기가 짧아집니다.')
+        info_text = col2.error('매도를 자주 실행합니다. 보유주기가 짧아집니다.')
     elif sell_sensitivity >= -4:
-        info_text = st.success("일반적인 매도를 실행합니다.")
+        info_text = col2.success("일반적인 매도를 실행합니다.")
     elif sell_sensitivity >= -8:
-        info_text = st.warning("매도를 가끔 실행합니다. 보유주기가 길어집니다.")
+        info_text = col2.warning("매도를 가끔 실행합니다. 보유주기가 길어집니다.")
     elif sell_sensitivity >= -12:
-        info_text = st.error("매도를 거의 실행하지 않습니다. 보유주기가 매우 길어집니다.")
+        info_text = col2.error("매도를 거의 실행하지 않습니다. 보유주기가 매우 길어집니다.")
         
     # 모델 인터페이스
     if model_radio == '빠른 분석':
@@ -123,7 +124,6 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         # 컨테이너 생성
         con = st.container()
         
-        
         # 종목 기본정보 불러오기
         all_stock_info_df = get_stock_basic_info(0, market="ALL", detail="BASIC")
         # 로딩바 진행
@@ -132,8 +132,10 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         # 티커 추출
         cond = all_stock_info_df['종목명'] == stock_name   
         ticker = all_stock_info_df.loc[cond,'티커'].values[0]
+        my_bar.progress(0.25)
         # 종목 가격 관련 정보 불러오기
-        result_df = get_stock_price_info(ticker,"ALL","ALL", params.YEAR_TO_DAY*analysys_year)     
+        price_df = get_stock_price_info(ticker,"ALL","ALL", params.YEAR_TO_DAY*analysys_year)     
+        my_bar.progress(0.3)
         success_msg.empty()
         # 로딩바 진행
         my_bar.progress(0.4)
@@ -142,8 +144,8 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         with st.spinner('Wait for it...'):
             # 종료조건, target_cond 보다 높은 backtest_yeild가 발견되거나, iter를 다 돌때 까지
             my_bar.progress(0.45)
-            result = get_backtest_yeild_with_name(stock_name, buy_cond, sell_cond, analysys_year,result_df,model_radio)
-            my_bar.progress(0.85)
+            result = get_backtest_yeild_with_name(stock_name, buy_cond, sell_cond, analysys_year,price_df,model_radio)
+            my_bar.progress(0.65)
             end = time.perf_counter()
             total_time =  end - start
             backtest_yeild =  result[0]
@@ -158,17 +160,33 @@ if side_menu_name=='매매타이밍 추천 프로그램':
             price_pattern = result[9]
             pridict_pattern = result[10]
             holding_day_ls = result[11]
-            my_bar.progress(1)
+            trading_position = result[12]
+            now_price = result[13]
             
+            my_bar.progress(0.85)
            
             success_msg.empty()
             st.success(f' Completed : {total_time:.1f}sec ')
             my_bar.empty()
             
-        # 매수 매도 가격과 수익률 출력
-        trading_history = pd.DataFrame([buy_list,sell_list,holding_day_ls]).transpose()
-        trading_history.columns = ['매수가격','매도가격','보유일자(일)']
-        trading_history.dropna(inplace=True, axis=0)
+            my_bar.progress(1)
+            # 현재 포지션 수익률 초기화
+            curr_yeild =0
+        # 보유중이라면
+        if trading_position =="Y":
+            # 매수 매도 가격과 수익률 출력
+            trading_history = pd.DataFrame([buy_list,sell_list,holding_day_ls]).transpose()
+            trading_history.columns = ['매수가격','매도가격','보유일자(일)']
+            trading_history.dropna(inplace=True, axis=0)
+            last_buy_price = trading_history['매수가격'].values[-1]
+            curr_yeild = round(((now_price-last_buy_price)/last_buy_price)*100,2)
+        # 미보유중이라면
+        elif trading_position =="N":
+            trading_history = pd.DataFrame([buy_list,sell_list,holding_day_ls]).transpose()
+            trading_history.columns = ['매수가격','매도가격','보유일자(일)']
+            trading_history.dropna(inplace=True, axis=0)
+            curr_yeild = 0
+
         trading_history['수익률'] = round(trading_history['매도가격']/trading_history['매수가격']-1,5)*100 
         # 이익횟수와 손실횟수
         profit_cnt = len(trading_history[trading_history['수익률']>=0])
@@ -196,6 +214,22 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         
         st.markdown("---------")
         yeild_prediction = result_df['5일 이후 예측수익률(%)'].values[0]
+        
+        
+        col1,col2 = st.columns(2)
+        col1.header("현재 AI 포지션")
+        
+        
+        if trading_position =="Y":
+            col2.header(":green[보유 중]")
+            col2.header(f"현재 수익률 :{curr_yeild:.2f}%")
+        elif  trading_position =="N":
+            col2.header(":red[관망 중]")
+        st.line_chart(price_df['종가'],use_container_width=True)
+        
+        st.markdown("---------")
+        
+        
         
         col1,col2 = st.columns(2)
         # 조건부 서식
@@ -320,7 +354,7 @@ if side_menu_name=='매매타이밍 추천 프로그램':
 
 
 
-        market_fundamental = get_index_fundamental_info(ticker)
+        market_fundamental = get_stocks_fundamental_info(ticker)
         per = stock_fundamental_info.iloc[:,0:1].values[0][0]
         pbr = stock_fundamental_info.iloc[:,1:2].values[0][0]
         div = stock_fundamental_info.iloc[:,2:3].values[0][0]
@@ -428,13 +462,8 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         elif result_fundamental=="저평가":
             col2.header("총평")
             col2.header(f":green[{result_fundamental}]")
-
         
-            
-            
         st.markdown("---------")
-
-
                 
 elif side_menu_name=='상승률/하락률 상위종목':
 

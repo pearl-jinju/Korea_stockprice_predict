@@ -232,4 +232,4 @@ def get_backtest_yeild_with_name(name, buy_cond, sell_cond, year, price_info_df,
         invest_efficiency = 0
         # print("투자하기에 현재 투자전략이 부적절합니다.")
     
-    return [backtest_yeild, yeild_prediction, invest_efficiency, stock_price_info_2days, stock_fundamental_info, buy_cond, sell_cond, buy_list, sell_list, result_df.values,yeild_prediction_list,holding_day_ls]
+    return [backtest_yeild, yeild_prediction, invest_efficiency, stock_price_info_2days, stock_fundamental_info, buy_cond, sell_cond, buy_list, sell_list, result_df.values,yeild_prediction_list,holding_day_ls, trading_position, buy_price]

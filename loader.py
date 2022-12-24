@@ -86,87 +86,74 @@ def ticker_to_name(ticker):
     name = stock.get_market_ticker_name(ticker)
     return name
 
-def get_index_fundamental_info(stock_ticker):
-    ''' 종목의 티커를 입력하면 그 종목이 소속된 시장의 funadamental 지표를 반환하는 함수 \n
-        당일의 자료는 pkl 형식으로 파일을 저장하며,\n
-        이미 pkl이 있다면 파일을 불러오는 함수를 호출한다.'''
-    # 파일이 없다면
-    if os.path.isfile(f'market_fundamental_{date_from_now()}.pkl')==False:
+def get_market_basket():
         market_tickers_kospi = stock.get_index_ticker_list(market='KOSPI')
         market_tickers_kosdaq = stock.get_index_ticker_list(market='KOSDAQ')
         result_df = pd.DataFrame()
-        maket_tickers_all = market_tickers_kospi+market_tickers_kosdaq
-        for maket_ticker in tqdm(maket_tickers_all):
+        market_tickers_all = market_tickers_kospi+market_tickers_kosdaq
+        for market_ticker in tqdm(market_tickers_all):
             # 시장명 str
-            maket_ticker = maket_ticker
-            market_name = stock.get_index_ticker_name(maket_ticker)
-            stocks_in_market = stock.get_index_portfolio_deposit_file(str(maket_ticker))
-            if stocks_in_market!=[]:
-                # 당일은 지수의 등락률이 0.0으로 나옴 funda만 사용할것!
-                index_fundamental = stock.get_index_fundamental(date_from_now(1), date_from_now(1), maket_ticker)
-                index_fundamental_rate = index_fundamental['등락률'].values[-1]
-                index_fundamental_per = index_fundamental['PER'].values[-1]
-                index_fundamental_pbr = index_fundamental['PBR'].values[-1]
-                index_fundamental_div = index_fundamental['배당수익률'].values[-1]
-                temp_df = pd.DataFrame([[market_name,index_fundamental_rate,index_fundamental_per,index_fundamental_pbr,index_fundamental_div,stocks_in_market]])
-                result_df = pd.concat([result_df,temp_df])
-        result_df.columns = ['시장명','등락률','PER','PBR', "DIV","편입종목"]
-        with open(f'.\\data\\raw_data\\market_fundamental_{date_from_now()}.pkl', 'wb') as f:
+            market_name = stock.get_index_ticker_name(market_ticker)
+            stocks_in_market = stock.get_index_portfolio_deposit_file(str(market_ticker))
+            temp_df = pd.DataFrame([[market_ticker,market_name,stocks_in_market]])
+            result_df = pd.concat([result_df,temp_df])
+        result_df.columns = ['시장티커','시장명','편입종목']
+        result_df.reset_index(inplace=True,drop=True)
+        # save
+        with open('market_basket.pkl', 'wb') as f:
             pickle.dump(result_df, f)
-            
-        # 리스트를 str로
-        result_df['편입종목'] = result_df['편입종목'].str.join("_")
-        cond1 = result_df['편입종목'].str.contains(stock_ticker)
-        result_df = result_df[cond1]
-         # 시장이 있는 경우
-        if list(result_df['시장명'].values):
-            market_name = result_df['시장명'].values[-1]
-            market_rate = result_df['등락률'].values[-1]
-            market_per = result_df['PER'].values[-1]
-            market_pbr = result_df['PBR'].values[-1]
-            market_div = result_df['DIV'].values[-1]
-        else:
-            market_name = "-"
-            market_rate = "-"
-            market_per = "-"
-            market_pbr = "-"
-            market_div = "-"
-        res = {'market_name':market_name,
-               'rate':market_rate,
-               'PER':market_per,
-               'PBR':market_pbr,
-               'DIV':market_div}
+
+
+def get_stocks_fundamental_info(stock_ticker):
+    """_ 
+    종목의 티커를 입력하면 그 종목이 소속된 시장의 funadamental 지표를 반환하는 함수 \n
+
+    Args:
+        stock_ticker (_type_): _description_
+    """
+    with open('market_basket.pkl', 'rb') as f:
+        raw_basket_df = pickle.load(f)
+        raw_basket_df['편입종목'] = raw_basket_df['편입종목'].str.join("_")
+
+    # 코스피/코스닥 관련 바스켓이름이 나오지 않도록 (너무 큰 바스켓이므로)
+    cond = (raw_basket_df['시장명'].str.contains("코스피")==False) & (raw_basket_df['시장명'].str.contains("코스닥")==False)
+    basket_df = raw_basket_df[cond]
+
+    # 없다면, 코스피/코스닥 관련 바스켓이 나오도록
+    if basket_df.empty==True:
+        basket_df = raw_basket_df[cond]
+
+    cond = basket_df['편입종목'].str.contains(stock_ticker)
+    cond_basket_df = basket_df.loc[cond][['시장티커','시장명']]
+    basket_names = cond_basket_df['시장명'].values
+    basket_tickers = cond_basket_df['시장티커'].values
+    # 맨마지막 시장만 사용 (추후 수정)0
+    try:
+        basket_name = basket_names[0]
+        basket_ticker = basket_tickers[0]
+        basket_funadamental = stock.get_index_fundamental(date_from_now(1), date_from_now(1), basket_ticker)
+        basket_funadamental_rate = basket_funadamental['등락률'].values[-1]
+        basket_funadamental_per = basket_funadamental['PER'].values[-1]
+        basket_funadamental_pbr = basket_funadamental['PBR'].values[-1]
+        basket_funadamental_div = basket_funadamental['배당수익률'].values[-1]
+        result_df = pd.DataFrame([[basket_name,basket_funadamental_rate,basket_funadamental_per,basket_funadamental_pbr,basket_funadamental_div]])
+        result_df.columns = ['시장명','등락률','PER','PBR', "DIV"]
+        
+        res = {'market_name':basket_name,
+                'rate':basket_funadamental_rate,
+                'PER':basket_funadamental_per,
+                'PBR':basket_funadamental_pbr,
+                'DIV':basket_funadamental_div}
+        return res
+
+    except:
+        res = {'market_name':"-",
+                'rate':"-",
+                'PER':"-",
+                'PBR':"-",
+                'DIV':"-"}
         return res
     
-    
-    
-    else:
-        # load
-        with open(f'.\\data\\raw_data\\market_fundamental_{date_from_now()}.pkl', 'rb') as f:
-            result_df = pickle.load(f)
-        # 리스트를 str로
-        result_df['편입종목'] = result_df['편입종목'].str.join("_")
-        cond1 = result_df['편입종목'].str.contains(stock_ticker)
-        result_df = result_df[cond1]
-         # 시장이 있는 경우
-        if list(result_df['시장명'].values):
-            market_name = result_df['시장명'].values[-1]
-            market_rate = result_df['등락률'].values[-1]
-            market_per = result_df['PER'].values[-1]
-            market_pbr = result_df['PBR'].values[-1]
-            market_div = result_df['DIV'].values[-1]
-        else:
-            market_name = "-"
-            market_rate = "-"
-            market_per = "-"
-            market_pbr = "-"
-            market_div = "-"
-        res = {'market_name':market_name,
-               'rate':market_rate,
-               'PER':market_per,
-               'PBR':market_pbr,
-               'DIV':market_div}
-        return res
 
 def get_thema():
     #크롤링 차단 막기
@@ -257,32 +244,38 @@ def get_included_thema_stocks_in_thema(name:str):
     return [included_thema, stocks_in_thema_result]
 
 
-if __name__=='__main__':   
+if __name__=='__main__': 
+    """
+    테마 데이터
+    마켓 바스켓 정보를 최신화하기 위해 한번씩 실행
+    """
+      
     # 테마 정보 받아오기
-    get_thema()
-    get_index_fundamental_info('005930')
+    get_market_basket()
+    # get_thema()
+    # get_index_fundamental_info('005930')
     
-    for market in ["KOSPI","KOSDAQ"]:    
-        result_df = pd.DataFrame()
-        # 티커 호출
-        tickers = stock.get_market_ticker_list(date_from_now(), market=market)
-        for ticker in tqdm(tickers[2:3]):  # tickers[1270] 오류 있음  
-                temp_df = get_stock_price_info(ticker)
-                result_df = pd.concat([result_df,temp_df])
-        result_df.columns = temp_df.columns
-        result_df['market'] = market
+    # for market in ["KOSPI","KOSDAQ"]:    
+    #     result_df = pd.DataFrame()
+    #     # 티커 호출
+    #     tickers = stock.get_market_ticker_list(date_from_now(), market=market)
+    #     for ticker in tqdm(tickers[2:3]):  # tickers[1270] 오류 있음  
+    #             temp_df = get_stock_price_info(ticker)
+    #             result_df = pd.concat([result_df,temp_df])
+    #     result_df.columns = temp_df.columns
+    #     result_df['market'] = market
         
-        with open(f'.\data\stock_price_data_all_period_{market}.pkl', 'wb') as f:
-            pickle.dump(result_df, f)
+    #     with open(f'.\data\stock_price_data_all_period_{market}.pkl', 'wb') as f:
+    #         pickle.dump(result_df, f)
 
-    # 임시저장 파일 load
-    with open(r'.\\data\\raw_data\\stock_price_data_all_period_KOSPI_2.pkl', 'rb') as f:
-        kospi_df = pickle.load(f)
-    with open(r'.\\data\\raw_data\\stock_price_data_all_period_KOSDAQ_2.pkl', 'rb') as f:
-        kosdaq_df = pickle.load(f)
+    # # 임시저장 파일 load
+    # with open(r'.\\data\\raw_data\\stock_price_data_all_period_KOSPI_2.pkl', 'rb') as f:
+    #     kospi_df = pickle.load(f)
+    # with open(r'.\\data\\raw_data\\stock_price_data_all_period_KOSDAQ_2.pkl', 'rb') as f:
+    #     kosdaq_df = pickle.load(f)
         
-    all_market_df = pd.concat([kospi_df,kosdaq_df])
-    # 최종 파일 생성
-    with open(f'.\\data\\raw_data\\stock_price_data_all_period_ALL_2.pkl', 'wb') as f:
-        pickle.dump(all_market_df, f)
+    # all_market_df = pd.concat([kospi_df,kosdaq_df])
+    # # 최종 파일 생성
+    # with open(f'.\\data\\raw_data\\stock_price_data_all_period_ALL_2.pkl', 'wb') as f:
+    #     pickle.dump(all_market_df, f)
         
