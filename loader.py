@@ -245,15 +245,16 @@ def get_included_thema_stocks_in_thema(name:str):
 
 
 if __name__=='__main__': 
+    
+    print(get_stocks_fundamental_info("힘스")['market_name'])
     """
     테마 데이터
     마켓 바스켓 정보를 최신화하기 위해 한번씩 실행
     """
       
     # 테마 정보 받아오기
-    get_market_basket()
+    # get_market_basket()
     # get_thema()
-    # get_index_fundamental_info('005930')
     
     # for market in ["KOSPI","KOSDAQ"]:    
     #     result_df = pd.DataFrame()

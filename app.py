@@ -6,7 +6,7 @@ from loader import get_stock_basic_info, get_stock_price_info, get_included_them
 from sklearn.metrics import mean_absolute_error
 import numpy as np
 import time
-
+from streamlit.components.v1 import html
 
 # ========================================
 # 매수 판단 예측수익률
@@ -115,6 +115,18 @@ if side_menu_name=='매매타이밍 추천 프로그램':
     # 버튼 설계
     
     if button2.button("매매 타이밍 찾기!"):
+        
+        
+        html = html("""
+                <ins class="kakao_ad_area" style="display:none;"
+                data-ad-unit = "DAN-PDZakg9aJMvjy92N"
+                data-ad-width = "320"
+                data-ad-height = "100"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>   
+            """)
+        
+        
+       
         st.markdown('----')
         progress = 0
         my_bar = st.progress(0.0+progress)
@@ -213,12 +225,11 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         result_df.columns =[ f"{analysys_year}년 Back_test 연환산수익률(%)" , "5일 이후 예측수익률(%)", "투자전략 유효성"]
         
         st.markdown("---------")
+       
         yeild_prediction = result_df['5일 이후 예측수익률(%)'].values[0]
-        
         
         col1,col2 = st.columns(2)
         col1.header("현재 AI 포지션")
-        
         
         if trading_position =="Y":
             col2.header(":green[보유 중]")
@@ -234,9 +245,9 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         col1,col2 = st.columns(2)
         # 조건부 서식
         col1.header("투자전략 평가")
-        if (result_df['투자전략 유효성'].values[0]=="적합") and(correct_rate>70): 
+        if (result_df['투자전략 유효성'].values[0]=="적합") and(correct_rate>60): 
             col1.subheader(":green[AI 신뢰도 높음]")
-            st.info('  AI 신뢰도가 높습니다!    매매타이밍추천을 참고하세요!', icon="ℹ️")
+            st.info('  AI 신뢰도가 높습니다!     매매타이밍추천을 참고하세요!', icon="ℹ️")
         else:
             col1.subheader(":red[AI 신뢰도 낮음]")
             st.warning('  AI 신뢰도가 낮습니다!    매매타이밍추천을 무시하세요!', icon="ℹ️")
@@ -329,6 +340,7 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         st.header(f"최근 100일 등락률 패턴  :green[오차 ± {mae_100:.2f}%]")
         st.line_chart(chart_data,use_container_width=True)     
         
+
         # 기타 정보제공
         st.markdown("---------")
         st.header("종목 관련 정보")
@@ -466,6 +478,15 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         st.markdown("---------")
                 
 elif side_menu_name=='상승률/하락률 상위종목':
+    
+        # 광고구간 추가
+    html = html("""
+            <ins class="kakao_ad_area" style="display:none;"
+            data-ad-unit = "DAN-PDZakg9aJMvjy92N"
+            data-ad-width = "320"
+            data-ad-height = "100"></ins>
+            <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>   
+        """)
 
     # 시장을 조회해서 각 업종정보를 가져와서 종합?
     top_bottom = get_high_low_info()
@@ -486,9 +507,9 @@ elif side_menu_name=='상승률/하락률 상위종목':
         col2.header(f"하락률 상위")
         for i in range(10):
             # 종목명 종가 등락률 1~10위
-            col1,col2 = st.columns(2)
+            col1,col2,col3,col4 = st.columns(4)
             col1.metric( f" ", f"{top10_name.values[i]}", f"{top10_rate.values[i]:.2f}%  / {top10_close.values[i]}")
-            col2.metric( f" ",f"{bottom10_name.values[i]}", f"{bottom10_rate.values[i]:.2f}%  /  {bottom10_close.values[i]}")
+            col3.metric( f" ",f"{bottom10_name.values[i]}", f"{bottom10_rate.values[i]:.2f}%  /  {bottom10_close.values[i]}")
 
     
 elif side_menu_name=="종목관련 테마 조회":
@@ -496,7 +517,17 @@ elif side_menu_name=="종목관련 테마 조회":
     thema = get_included_thema_stocks_in_thema(stock_name)
     thema_list = thema[0]
     thema_stocks_df = thema[1]
-        
+    
+    # 광고구간 추가
+    html = html("""
+            <ins class="kakao_ad_area" style="display:none;"
+            data-ad-unit = "DAN-PDZakg9aJMvjy92N"
+            data-ad-width = "320"
+            data-ad-height = "100"></ins>
+            <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>   
+        """)
+    
+    
     st.header("관련 테마")    
     options = st.multiselect(
                             f'{stock_name} 이/가 포함된 테마입니다.',
@@ -518,6 +549,8 @@ elif side_menu_name=="종목관련 테마 조회":
         
         st.subheader(f"{thema_name}테마 / 평균 등락률 : {thema_average_rate:.2f}%")
         st.dataframe(result_df,use_container_width=True)
+        
+    
         
 
 elif side_menu_name=='코스피/코스닥 달력':
