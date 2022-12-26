@@ -34,6 +34,14 @@ side_menu_name = st.sidebar.selectbox('사용할 기능을 선택하세요.',['�
 
 st.title('지금 투자해도 될까?')
 st.markdown('----')
+        
+html = html("""
+        <ins class="kakao_ad_area" style="display:none;"
+        data-ad-unit = "DAN-PDZakg9aJMvjy92N"
+        data-ad-width = "320"
+        data-ad-height = "100"></ins>
+        <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>   
+    """)
 
 if side_menu_name=='매매타이밍 추천 프로그램':
     st.header("종목명을 입력하세요!")
@@ -115,18 +123,6 @@ if side_menu_name=='매매타이밍 추천 프로그램':
     # 버튼 설계
     
     if button2.button("매매 타이밍 찾기!"):
-        
-        
-        html = html("""
-                <ins class="kakao_ad_area" style="display:none;"
-                data-ad-unit = "DAN-PDZakg9aJMvjy92N"
-                data-ad-width = "320"
-                data-ad-height = "100"></ins>
-                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>   
-            """)
-        
-        
-       
         st.markdown('----')
         progress = 0
         my_bar = st.progress(0.0+progress)
