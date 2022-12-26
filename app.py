@@ -474,16 +474,6 @@ if side_menu_name=='매매타이밍 추천 프로그램':
         st.markdown("---------")
                 
 elif side_menu_name=='상승률/하락률 상위종목':
-    
-        # 광고구간 추가
-    html = html("""
-            <ins class="kakao_ad_area" style="display:none;"
-            data-ad-unit = "DAN-PDZakg9aJMvjy92N"
-            data-ad-width = "320"
-            data-ad-height = "100"></ins>
-            <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>   
-        """)
-
     # 시장을 조회해서 각 업종정보를 가져와서 종합?
     top_bottom = get_high_low_info()
     top10 = top_bottom[0]
@@ -512,17 +502,7 @@ elif side_menu_name=="종목관련 테마 조회":
     stock_name = st.text_input('종목명을 입력하세요', value="카카오")
     thema = get_included_thema_stocks_in_thema(stock_name)
     thema_list = thema[0]
-    thema_stocks_df = thema[1]
-    
-    # 광고구간 추가
-    html = html("""
-            <ins class="kakao_ad_area" style="display:none;"
-            data-ad-unit = "DAN-PDZakg9aJMvjy92N"
-            data-ad-width = "320"
-            data-ad-height = "100"></ins>
-            <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>   
-        """)
-    
+    thema_stocks_df = thema[1]  
     
     st.header("관련 테마")    
     options = st.multiselect(
