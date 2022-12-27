@@ -118,6 +118,7 @@ if side_menu_name=='매매타이밍 추천 프로그램':
     # st.write(f"* :green[학습된 투자 전략으로 {analysys_year}년의 기간동안 시뮬레이션을 실행]합니다. 기간이 길어질수록 분석시간이 늘어납니다.")
    
 
+    html2, html3 = st.columns(2)
     html2 = html("""
                 <ins class="kakao_ad_area" style="display:none;"
                 data-ad-unit = "DAN-Nk8wkCPUr6a9ITSc"
@@ -125,6 +126,17 @@ if side_menu_name=='매매타이밍 추천 프로그램':
                 data-ad-height = "250"></ins>
                 <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
                 """)
+    
+    html2 = html("""
+                <ins class="kakao_ad_area" style="display:none;"
+                data-ad-unit = "DAN-IUMgTaAdJSkBRiph"
+                data-ad-width = "250"
+                data-ad-height = "250"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+            """)
+    
+    
+
 
     button1, button2, button3 = st.columns(3)
     # 버튼 설계    
