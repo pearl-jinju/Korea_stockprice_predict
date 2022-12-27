@@ -35,7 +35,7 @@ side_menu_name = st.sidebar.selectbox('사용할 기능을 선택하세요.',['�
 st.title('지금 투자해도 될까?')
 st.markdown('----')
         
-html = html("""
+html1 = html("""
         <ins class="kakao_ad_area" style="display:none;"
         data-ad-unit = "DAN-PDZakg9aJMvjy92N"
         data-ad-width = "320"
@@ -117,11 +117,17 @@ if side_menu_name=='매매타이밍 추천 프로그램':
     # analysys_year = st.number_input('시뮬레이션 기간을 입력하세요. (단위 : 년)', value=3)
     # st.write(f"* :green[학습된 투자 전략으로 {analysys_year}년의 기간동안 시뮬레이션을 실행]합니다. 기간이 길어질수록 분석시간이 늘어납니다.")
    
-    button1, button2, button3 = st.columns(3)
-    
 
-    # 버튼 설계
-    
+    html2 = html("""
+                <ins class="kakao_ad_area" style="display:none;"
+                data-ad-unit = "DAN-Nk8wkCPUr6a9ITSc"
+                data-ad-width = "300"
+                data-ad-height = "250"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+                """)
+
+    button1, button2, button3 = st.columns(3)
+    # 버튼 설계    
     if button2.button("매매 타이밍 찾기!"):
         st.markdown('----')
         progress = 0
