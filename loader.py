@@ -246,16 +246,18 @@ def get_included_thema_stocks_in_thema(name:str):
 
 if __name__=='__main__': 
     
-    print(get_stocks_fundamental_info("힘스")['market_name'])
+ 
     """
     테마 데이터
     마켓 바스켓 정보를 최신화하기 위해 한번씩 실행
     """
-      
-    # 테마 정보 받아오기
+    
+    # 종목의 시장정보 업데이트============================
     # get_market_basket()
+    # 종목의 테마정보 업데이트============================
     # get_thema()
     
+    # 종목의 가격정보 업데이트============================
     # for market in ["KOSPI","KOSDAQ"]:    
     #     result_df = pd.DataFrame()
     #     # 티커 호출
@@ -279,4 +281,6 @@ if __name__=='__main__':
     # # 최종 파일 생성
     # with open(f'.\\data\\raw_data\\stock_price_data_all_period_ALL_2.pkl', 'wb') as f:
     #     pickle.dump(all_market_df, f)
-        
+    
+    
+
