@@ -28,6 +28,13 @@ sell_sensitivity = sell_cond
 
 
 
+st.set_page_config(
+    page_title="지금 투자해도 될까?_머신러닝 기반 매매타이밍 예측기",
+    page_icon="🧊",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
 st.sidebar.header('MENU')
 side_menu_name = st.sidebar.selectbox('사용할 기능을 선택하세요.',['매매타이밍 추천 프로그램','종목관련 테마 조회','상승률/하락률 상위종목'])
 
